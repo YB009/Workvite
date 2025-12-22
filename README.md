@@ -1,12 +1,27 @@
 # Team Task Manager
 
-Modern React + Vite frontend with an Express/Prisma/PostgreSQL backend and Firebase authentication (email/password and social logins). The project is set up as a workspace with `client` and `server` packages.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/github/explore/main/topics/firebase/firebase.png" alt="Firebase" height="96" />
+</p>
+
+<p align="center">
+  A modern React + Vite frontend with an Express/Prisma/PostgreSQL backend and Firebase authentication (email/password and social logins).
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/react"><img src="https://img.shields.io/badge/react-19-61dafb" alt="React" /></a>
+  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/vite-7-blueviolet" alt="Vite" /></a>
+  <a href="https://firebase.google.com/"><img src="https://img.shields.io/badge/firebase-auth-yellow" alt="Firebase" /></a>
+  <a href="https://expressjs.com/"><img src="https://img.shields.io/badge/express-api-black" alt="Express" /></a>
+  <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/prisma-ORM-2d3748" alt="Prisma" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/postgres-14-blue" alt="Postgres" /></a>
+</p>
 
 ## Tech stack
-- Frontend: React 19, Vite, Tailwind CSS, Axios
-- Auth: Firebase Auth (email/password + Google, Facebook, GitHub, Twitter/X)
-- Backend: Node/Express, Prisma ORM, PostgreSQL, Firebase Admin for token verification
-- Dev tooling: Nodemon, ESLint (via Vite default), npm workspaces
+- Frontend: React 19, Vite, Tailwind CSS, Axios  
+- Auth: Firebase Auth (email/password + Google, Facebook, GitHub, Twitter/X)  
+- Backend: Node/Express, Prisma ORM, PostgreSQL, Firebase Admin for token verification  
+- Dev tooling: Nodemon, ESLint (via Vite default), npm workspaces  
 
 ## Project structure
 ```
@@ -76,7 +91,7 @@ npm run dev   # starts Vite on 5173
 - For each social provider, set the callback/redirect URLs in the provider console to the Firebase handler:
   - `https://your_project.firebaseapp.com/__/auth/handler`
   - `https://your_project.web.app/__/auth/handler`
-- Put the provider keys/secrets in Firebase Auth > Sign-in method (server does not need them directly). 
+- Put the provider keys/secrets in Firebase Auth > Sign-in method (server does not need them directly).
 - Add `localhost` (and any deployed domains) to Firebase Auth authorized domains.
 
 ## API protection
