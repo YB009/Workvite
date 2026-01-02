@@ -1,14 +1,31 @@
+import { useState } from "react";
 import "./App.css";
 import LoginPage from "./pages/auth/LoginPage.jsx";
 import { useAuthContext } from "./context/AuthContext.jsx";
+import ProjectListPage from "./pages/projects/ProjectListPage.jsx";
+import ProjectDetailsPage from "./pages/projects/ProjectDetailsPage.jsx";
+import CreateProjectPage from "./pages/projects/CreateProjectPage.jsx";
+import TaskBoardPage from "./pages/tasks/TaskBoardPage.jsx";
+import TaskDetailsPage from "./pages/tasks/TaskDetailsPage.jsx";
+import CreateTaskPage from "./pages/tasks/CreateTaskPage.jsx";
+
+const views = {
+  projects: <ProjectListPage />,
+  projectDetails: <ProjectDetailsPage />,
+  createProject: <CreateProjectPage />,
+  board: <TaskBoardPage />,
+  taskDetails: <TaskDetailsPage />,
+  createTask: <CreateTaskPage />,
+};
 
 function App() {
-  const { user, firebaseUser, loading, logout } = useAuthContext();
+  const { firebaseUser, loading, logout } = useAuthContext();
+  const [currentView, setCurrentView] = useState("projects");
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Loading auth...</p>
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "#6b7280" }}>
+        Loading auth...
       </div>
     );
   }
@@ -18,41 +35,22 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-      <div className="bg-white shadow rounded-lg p-6 w-full max-w-lg">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-2">
-          You are logged in
-        </h1>
-        <p className="text-gray-700">
-          Firebase user: <strong>{firebaseUser.email}</strong>
-        </p>
-        {user && (
-          <p className="text-gray-700 mt-2">
-            Backend user: <strong>{user.email}</strong> (provider: {user.provider})
-          </p>
-        )}
-        <button
-          onClick={async () => {
-            try {
-              const token = await firebaseUser.getIdToken(true);
-              console.log("Firebase ID token:", token);
-              alert("Token printed to console");
-            } catch (err) {
-              console.error("Failed to get ID token", err);
-              alert("Failed to get ID token; check console");
-            }
-          }}
-          className="mt-3 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded"
-        >
-          Dump ID token (console)
-        </button>
-        <button
-          onClick={logout}
-          className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-        >
-          Sign out
-        </button>
-      </div>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <h2>Dashhboard</h2>
+        <div className="nav-group">
+          <div className={`nav-item ${currentView === "projects" ? "active" : ""}`} onClick={() => setCurrentView("projects")}>Projects</div>
+          <div className={`nav-item ${currentView === "projectDetails" ? "active" : ""}`} onClick={() => setCurrentView("projectDetails")}>Project Details</div>
+          <div className={`nav-item ${currentView === "board" ? "active" : ""}`} onClick={() => setCurrentView("board")}>Task Board</div>
+          <div className={`nav-item ${currentView === "taskDetails" ? "active" : ""}`} onClick={() => setCurrentView("taskDetails")}>Task Details</div>
+          <div className={`nav-item ${currentView === "createProject" ? "active" : ""}`} onClick={() => setCurrentView("createProject")}>Create Project</div>
+          <div className={`nav-item ${currentView === "createTask" ? "active" : ""}`} onClick={() => setCurrentView("createTask")}>Create Task</div>
+          <div className="nav-item" onClick={logout}>Sign out</div>
+        </div>
+      </aside>
+      <main className="main">
+        {views[currentView]}
+      </main>
     </div>
   );
 }
