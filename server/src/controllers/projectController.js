@@ -1,5 +1,6 @@
 import prisma from "../../prisma/client.js";
 import { assertRole, Roles } from "../utils/permissions.js";
+import { deleteByPrefix, getCache, setCache } from "../utils/cache.js";
 
 export const createProject = async (req, res) => {
   try {
@@ -31,6 +32,8 @@ export const createProject = async (req, res) => {
       }
     });
 
+    await deleteByPrefix(`projects:${req.orgId}`);
+    await deleteByPrefix(`tasks:${req.orgId}`);
     res.status(201).json(project);
 
   } catch (error) {
@@ -63,6 +66,7 @@ export const updateProject = async (req, res) => {
       }
     });
 
+    await deleteByPrefix(`projects:${req.orgId}`);
     res.json(updated);
   } catch (error) {
     console.error(error);
@@ -72,14 +76,28 @@ export const updateProject = async (req, res) => {
 
 export const getOrgProjects = async (req, res) => {
   try {
-    // If owner/admin: show all projects in org
-    const isPrivileged = [Roles.OWNER, Roles.ADMIN].includes(req.membership.role);
+    const cacheKey = `projects:${req.orgId}:${req.user.id}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    // Only owners see all projects; others need explicit access
+    const isPrivileged = req.membership.role === Roles.OWNER;
 
     let projects;
     if (isPrivileged) {
       projects = await prisma.project.findMany({
         where: { organizationId: req.orgId },
-        include: { tasks: true, team: true }
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          coverImage: true,
+          userId: true,
+          organizationId: true,
+          isPrivate: true,
+          createdAt: true,
+          updatedAt: true
+        }
       });
     } else {
       // Members only see projects explicitly shared with them
@@ -93,10 +111,21 @@ export const getOrgProjects = async (req, res) => {
           id: { in: allowedProjectIds.map((p) => p.projectId) },
           organizationId: req.orgId
         },
-        include: { tasks: true, team: true }
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          coverImage: true,
+          userId: true,
+          organizationId: true,
+          isPrivate: true,
+          createdAt: true,
+          updatedAt: true
+        }
       });
     }
 
+    await setCache(cacheKey, projects, 15000);
     res.json(projects);
 
   } catch (error) {

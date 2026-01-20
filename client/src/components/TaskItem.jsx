@@ -10,7 +10,13 @@ export default function TaskItem({ task }) {
   return (
     <div className="task-item">
       <div className="task-item__top">
-        <span className="task-item__pill" style={{ background: `${priorityHue[task.priority] || "#e5e7eb"}20`, color: priorityHue[task.priority] || "#111827" }}>
+        <span
+          className="task-item__pill"
+          style={{
+            background: `${priorityHue[task.priority] || "#e5e7eb"}20`,
+            color: priorityHue[task.priority] || "#111827",
+          }}
+        >
           {task.priority}
         </span>
         <span className="task-item__meta">{task.dueDate || "No date"}</span>
@@ -25,7 +31,7 @@ export default function TaskItem({ task }) {
             </div>
           ))}
         </div>
-        <span className="task-item__stat">🔗 {task.attachments ?? 0}</span>
+        <span className="task-item__stat">{task.attachments ?? 0} files</span>
       </div>
     </div>
   );

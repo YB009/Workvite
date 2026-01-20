@@ -289,3 +289,39 @@
   color: #991b1b;
   font-weight: 600;
 }
+
+.is-loading {
+  min-height: 100px;
+}
+
+.skeleton-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.skeleton-card {
+  height: 64px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #eef1f7, #f8fafc, #eef1f7);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+.skeleton-line {
+  display: inline-block;
+  width: 40px;
+  height: 16px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #eef1f7, #f8fafc, #eef1f7);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

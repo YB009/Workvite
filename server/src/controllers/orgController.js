@@ -1,4 +1,5 @@
 import prisma from "../../prisma/client.js";
+import { getCache, setCache, deleteByPrefix } from "../utils/cache.js";
 
 export const createOrganization = async (req, res) => {
   const { name } = req.body;
@@ -7,25 +8,42 @@ export const createOrganization = async (req, res) => {
   const org = await prisma.organization.create({
     data: {
       name,
+      ownerId: userId,
       members: {
         create: {
           role: "OWNER",
+          status: "ACTIVE",
           userId
         }
       }
     }
   });
 
+  await deleteByPrefix(`orgs:${userId}`);
   res.json(org);
 };
 
 export const getMyOrganizations = async (req, res) => {
+  const cacheKey = `orgs:${req.user.id}`;
+  const cached = await getCache(cacheKey);
+  if (cached) return res.json(cached);
+
   const orgs = await prisma.membership.findMany({
     where: { userId: req.user.id },
-    include: { organization: true }
+    select: {
+      role: true,
+      organization: {
+        select: { id: true, name: true, createdAt: true }
+      }
+    }
   });
 
-  res.json(orgs.map(o => o.organization));
+  const data = orgs.map((o) => ({
+    ...o.organization,
+    role: o.role
+  }));
+  await setCache(cacheKey, data, 15000);
+  res.json(data);
 };
 
 export const inviteToOrganization = async (req, res) => {

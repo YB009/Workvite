@@ -6,128 +6,172 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id                 String          @id @default(cuid())
+  email              String          @unique
+  name               String?
+  provider           String
+  firebaseUid        String          @unique
+  googleId           String?         @unique
+  facebookId         String?         @unique
+  githubId           String?         @unique
+  twitterId          String?         @unique
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  activities         Activity[]
+  invitesSent        Invite[]        @relation("InviteInviter")
+  memberships        Membership[]
+  ownedOrganizations Organization[]
+  profile            Profile?
+  projects           Project[]
+  projectAccess      ProjectAccess[]
+  projectMembers     ProjectMember[]
+  tasks              Task[]
+}
+
+model Organization {
+  id        String       @id @default(cuid())
+  name      String
+  createdAt DateTime     @default(now())
+  ownerId   String?
+  invites   Invite[]
+  members   Membership[]
+  owner     User?        @relation(fields: [ownerId], references: [id])
+  projects  Project[]
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  role           Role
+  userId         String
+  organizationId String
+  status         MembershipStatus @default(ACTIVE)
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  user           User             @relation(fields: [userId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+model Invite {
+  id             String       @id @default(cuid())
+  email          String
+  role           Role         @default(MEMBER)
+  status         InviteStatus @default(INVITED)
+  organizationId String
+  invitedById    String
+  token          String       @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  invitedBy      User         @relation("InviteInviter", fields: [invitedById], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+}
+
+model Project {
+  id             String          @id @default(cuid())
+  name           String
+  description    String?
+  userId         String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  isPrivate      Boolean         @default(false)
+  organizationId String
+  coverImage     String?
+  activities     Activity[]
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  access         ProjectAccess[]
+  team           ProjectMember[]
+  tasks          Task[]
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      String     @default("todo")
+  priority    String     @default("medium")
+  userId      String
+  projectId   String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  dueDate     DateTime?
+  activities  Activity[]
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  message   String
+  actorId   String
+  projectId String?
+  taskId    String?
+  createdAt DateTime     @default(now())
+  actor     User         @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  project   Project?     @relation(fields: [projectId], references: [id])
+  task      Task?        @relation(fields: [taskId], references: [id])
+}
+
+model ProjectAccess {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  bio       String?
+  avatarUrl String?
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      String   @default("contributor")
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
 enum Role {
   OWNER
   ADMIN
   MEMBER
 }
 
-model User {
-  id          String  @id @default(cuid())
-  email       String  @unique
-  name        String?
-  provider    String
-  firebaseUid String  @unique
-  googleId    String? @unique
-  facebookId  String? @unique
-  githubId    String? @unique
-  twitterId   String? @unique
-
-  projects       Project[]
-  tasks          Task[]
-  memberships    Membership[]
-  projectAccess  ProjectAccess[]
-  projectMembers ProjectMember[]
-  profile        Profile?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum ActivityType {
+  TASK_CREATED
+  TASK_STATUS_CHANGED
+  FILE_UPLOADED
+  COMMENT_ADDED
 }
 
-model Organization {
-  id       String       @id @default(cuid())
-  name     String
-  members  Membership[]
-  projects Project[]
-
-  createdAt DateTime @default(now())
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  DEACTIVATED
 }
 
-model Membership {
-  id   String @id @default(cuid())
-  role Role
-
-  userId         String
-  organizationId String
-
-  user         User         @relation(fields: [userId], references: [id])
-  organization Organization @relation(fields: [organizationId], references: [id])
-
-  @@unique([userId, organizationId])
-}
-
-model Project {
-  id             String  @id @default(cuid())
-  name           String
-  description    String?
-  coverImage     String?
-  userId         String
-  organizationId String
-  isPrivate      Boolean @default(false)
-
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  tasks        Task[]
-  access       ProjectAccess[]
-  team         ProjectMember[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Task {
-  id          String  @id @default(cuid())
-  title       String
-  description String?
-  status      String  @default("todo")
-  priority    String  @default("medium")
-  dueDate     DateTime?
-  userId      String
-  projectId   String
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ProjectAccess {
-  id        String @id @default(cuid())
-  projectId String
-  userId    String
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([projectId, userId])
-}
-
-model Profile {
-  id        String  @id @default(cuid())
-  userId    String  @unique
-  bio       String?
-  avatarUrl String?
-  title     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ProjectMember {
-  id        String @id @default(cuid())
-  projectId String
-  userId    String
-  role      String @default("contributor")
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([projectId, userId])
+enum InviteStatus {
+  INVITED
+  ACCEPTED
+  CANCELLED
 }

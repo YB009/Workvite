@@ -130,6 +130,14 @@ export const firebaseAuth = async (req, res) => {
       }
     }
 
+    const memberships = await prisma.membership.findMany({
+      where: { userId: user.id },
+      select: {
+        role: true,
+        organization: { select: { id: true, name: true } }
+      }
+    });
+
     const token = generateToken(user);
 
     return res.json({
@@ -141,6 +149,12 @@ export const firebaseAuth = async (req, res) => {
         name: user.name,
         provider: user.provider,
       },
+      hasOrganization: memberships.length > 0,
+      organizations: memberships.map((m) => ({
+        id: m.organization.id,
+        name: m.organization.name,
+        role: m.role
+      }))
     });
   } catch (err) {
     console.error("Firebase auth error:", err);

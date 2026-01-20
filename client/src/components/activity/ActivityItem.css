@@ -1,0 +1,77 @@
+.activity-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #eef1f7;
+  background: #ffffff;
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.05);
+}
+
+.activity-item__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.activity-item__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity-item__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.activity-item__message {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #0f172a;
+}
+
+.activity-item__actor {
+  font-weight: 700;
+}
+
+.activity-item__action {
+  color: #4b5563;
+}
+
+.activity-item__time {
+  color: #6b7280;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.activity-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.activity-item__link {
+  border: none;
+  background: #f3f4f6;
+  color: #111827;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.activity-item__link:hover {
+  background: #e5e7eb;
+}

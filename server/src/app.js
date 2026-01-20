@@ -6,6 +6,8 @@ import authRoutes from "./routes/authRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
 import orgRoutes from "./routes/orgRoutes.js";
+import activityRoutes from "./routes/activityRoutes.js";
+import teamRoutes from "./routes/teamRoutes.js";
 
 const app = express();
 
@@ -21,6 +23,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/orgs", orgRoutes);
+app.use("/api/activity", activityRoutes);
+app.use("/api/team", teamRoutes);
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });

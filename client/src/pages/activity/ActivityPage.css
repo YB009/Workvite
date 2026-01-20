@@ -1,0 +1,35 @@
+.activity-page__toolbar {
+  align-items: flex-start;
+}
+
+.activity-page__toolbar h1 {
+  margin-bottom: 4px;
+}
+
+.activity-page__list {
+  display: grid;
+  gap: 12px;
+}
+
+.activity-page__empty {
+  padding: 30px;
+  text-align: center;
+}
+
+.activity-page__empty h3 {
+  margin: 0 0 6px 0;
+  color: #0f172a;
+}
+
+.activity-page__loading {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  padding: 30px;
+}
+
+.activity-page__footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}

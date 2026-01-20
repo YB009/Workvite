@@ -1,10 +1,9 @@
 import "./Dashboard.css";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "../api/axiosInstance";
 import { loginWithFirebase } from "../api/authApi";
 import { useAuthContext } from "../context/AuthContext.jsx";
-import { FadeIn, ScaleIn } from "../utils/animations.jsx";
 import {
   Search,
   FolderKanban,
@@ -45,20 +44,28 @@ const formatRelativeTime = (value) => {
 };
 
 export default function Dashboard() {
-  const { firebaseUser, user } = useAuthContext();
+  const { firebaseUser, user, activeOrganization } = useAuthContext();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [org, setOrg] = useState(null);
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [hasRetriedAuth, setHasRetriedAuth] = useState(false);
+  const inflightRef = useRef(false);
+  const lastOrgRef = useRef("");
 
   const loadDashboard = useCallback(async () => {
-    if (!firebaseUser) return;
-    setLoading(true);
+    if (!firebaseUser || inflightRef.current) return;
+    inflightRef.current = true;
+    const nextOrgId = activeOrganization?.id || "";
+    const orgChanged = lastOrgRef.current !== nextOrgId;
+    if (orgChanged || (!projects.length && !tasks.length)) {
+      setLoading(true);
+    }
+    setIsFetching(true);
     setError("");
 
     try {
@@ -66,26 +73,23 @@ export default function Dashboard() {
         Authorization: `Bearer ${await firebaseUser.getIdToken()}`
       };
 
-      const orgRes = await axios.get("/api/orgs", { headers: authHeader });
-      const orgs = orgRes.data || [];
-      const activeOrg = orgs[0] || null;
-      setOrg(activeOrg);
-
-      if (!activeOrg) {
+      if (!activeOrganization) {
         setProjects([]);
         setTasks([]);
         setLastUpdated(Date.now());
+        lastOrgRef.current = "";
         return;
       }
 
       const [projectRes, taskRes] = await Promise.all([
-        axios.get(`/api/projects/org/${activeOrg.id}`, { headers: authHeader }),
-        axios.get(`/api/tasks/org/${activeOrg.id}`, { headers: authHeader })
+        axios.get(`/api/projects/org/${activeOrganization.id}`, { headers: authHeader }),
+        axios.get(`/api/tasks/org/${activeOrganization.id}`, { headers: authHeader })
       ]);
 
       setProjects(projectRes.data || []);
       setTasks(taskRes.data || []);
       setLastUpdated(Date.now());
+      lastOrgRef.current = activeOrganization.id;
     } catch (err) {
       console.error("Dashboard load failed", err);
 
@@ -106,21 +110,25 @@ export default function Dashboard() {
       setError("Couldn't load dashboard data. Try refreshing.");
     } finally {
       setLoading(false);
+      setIsFetching(false);
+      inflightRef.current = false;
     }
-  }, [firebaseUser, hasRetriedAuth]);
+  }, [firebaseUser, hasRetriedAuth, activeOrganization]);
 
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
 
   // Keep search in sync with URL (for header search)
+  const searchString = searchParams.toString();
+
   useEffect(() => {
     const current = searchParams.get("q") || "";
     if (current !== searchQuery) {
       setSearchQuery(current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchString]);
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
@@ -129,7 +137,9 @@ export default function Dashboard() {
     } else {
       next.delete("q");
     }
-    setSearchParams(next, { replace: true });
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
@@ -226,181 +236,181 @@ export default function Dashboard() {
     firebaseUser?.email ||
     "there";
 
+  const skeletonItems = useMemo(() => Array.from({ length: 3 }, (_, i) => i), []);
+  const showSkeleton = loading && !activeOrganization && projects.length === 0 && tasks.length === 0;
+  const orgLabel = activeOrganization?.name || (loading ? "Loading workspace..." : "Workspace");
+
   return (
     <div className="page-stack dashboard-page">
-      <FadeIn>
-        <div className="content-surface dashboard-hero hover-lift">
-          <div>
-            <p className="eyebrow">Welcome back</p>
-            <h1 className="hero-heading">Hi {displayName}, your work at a glance</h1>
-            <p className="muted">
-              Everything from your workspace pulled straight from the API—projects,
-              tasks, and activity without mock data.
-            </p>
-            {org ? (
-              <div className="pill slim">{org.name}</div>
-            ) : (
-              <div className="pill slim muted">No organization found yet</div>
-            )}
+      <div className={`content-surface dashboard-hero hover-lift ${showSkeleton ? "is-loading" : ""}`}>
+        <div>
+          <p className="eyebrow">Welcome back</p>
+          <h1 className="hero-heading">Hi {displayName}, your work at a glance</h1>
+          <p className="muted">
+            Everything from your workspace pulled straight from the API - projects,
+            tasks, and activity without mock data.
+          </p>
+          <div className={`pill slim ${activeOrganization ? "" : "muted"}`}>{orgLabel}</div>
+        </div>
+        <div className="hero-meta">
+          <div className="meta-card">
+            <Clock3 size={16} />
+            <span>
+              {isFetching ? "Loading..." : `Refreshed ${lastUpdated ? formatRelativeTime(lastUpdated) : "just now"}`}
+            </span>
           </div>
-          <div className="hero-meta">
-            <div className="meta-card">
-              <Clock3 size={16} />
-              <span>
-                Refreshed {lastUpdated ? formatRelativeTime(lastUpdated) : "just now"}
-              </span>
-            </div>
-            <button className="btn-ghost refresh-btn" onClick={loadDashboard}>
-              <RefreshCw size={16} />
-              Refresh
-            </button>
+          <button className="btn-ghost refresh-btn" onClick={loadDashboard}>
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div className={`grid stats-grid ${showSkeleton ? "is-loading" : ""}`}>
+        <div className="stat-card hover-lift">
+          <div className="stat-card__icon projects">
+            <FolderKanban size={18} />
+          </div>
+          <div>
+            <p className="stat-card__label">Total projects</p>
+            <p className="stat-card__value">{showSkeleton ? <span className="skeleton-line" /> : projects.length}</p>
           </div>
         </div>
-      </FadeIn>
-
-      <div className="grid stats-grid">
-        <ScaleIn delay={40}>
-          <div className="stat-card hover-lift">
-            <div className="stat-card__icon projects">
-              <FolderKanban size={18} />
-            </div>
-            <div>
-              <p className="stat-card__label">Total projects</p>
-              <p className="stat-card__value">{projects.length}</p>
-            </div>
+        <div className="stat-card hover-lift">
+          <div className="stat-card__icon active">
+            <ListChecks size={18} />
           </div>
-        </ScaleIn>
-        <ScaleIn delay={80}>
-          <div className="stat-card hover-lift">
-            <div className="stat-card__icon active">
-              <ListChecks size={18} />
-            </div>
-            <div>
-              <p className="stat-card__label">Active tasks</p>
-              <p className="stat-card__value">{activeTasks.length}</p>
-            </div>
+          <div>
+            <p className="stat-card__label">Active tasks</p>
+            <p className="stat-card__value">{showSkeleton ? <span className="skeleton-line" /> : activeTasks.length}</p>
           </div>
-        </ScaleIn>
-        <ScaleIn delay={120}>
-          <div className="stat-card hover-lift">
-            <div className="stat-card__icon completed">
-              <CheckCircle2 size={18} />
-            </div>
-            <div>
-              <p className="stat-card__label">Completed tasks</p>
-              <p className="stat-card__value">{completedTasks.length}</p>
-            </div>
+        </div>
+        <div className="stat-card hover-lift">
+          <div className="stat-card__icon completed">
+            <CheckCircle2 size={18} />
           </div>
-        </ScaleIn>
-        <ScaleIn delay={160}>
-          <div className="stat-card hover-lift">
-            <div className="stat-card__icon users">
-              <UserRound size={18} />
-            </div>
-            <div>
-              <p className="stat-card__label">People in view</p>
-              <p className="stat-card__value">{user ? 1 : 0}</p>
-            </div>
+          <div>
+            <p className="stat-card__label">Completed tasks</p>
+            <p className="stat-card__value">{showSkeleton ? <span className="skeleton-line" /> : completedTasks.length}</p>
           </div>
-        </ScaleIn>
+        </div>
+        <div className="stat-card hover-lift">
+          <div className="stat-card__icon users">
+            <UserRound size={18} />
+          </div>
+          <div>
+            <p className="stat-card__label">People in view</p>
+            <p className="stat-card__value">{showSkeleton ? <span className="skeleton-line" /> : user ? 1 : 0}</p>
+          </div>
+        </div>
       </div>
 
       <div className="grid two-col dashboard-body">
-        <FadeIn>
-          <div className="content-surface search-panel">
-            <div className="section-title">
-              <div>
-                <p className="eyebrow">Search</p>
-                <h3>Search tasks, projects, and users</h3>
-              </div>
-              <div className="search-meta">
-                <span className="chip">Tasks {tasks.length}</span>
-                <span className="chip">Projects {projects.length}</span>
-                <span className="chip">Users {user ? 1 : 0}</span>
-              </div>
+        <div className={`content-surface search-panel ${showSkeleton ? "is-loading" : ""}`}>
+          <div className="section-title">
+            <div>
+              <p className="eyebrow">Search</p>
+              <h3>Search tasks, projects, and users</h3>
             </div>
-
-            <div className="search-input">
-              <Search size={18} />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Type to search by title, description, or status"
-              />
-              {searchQuery && (
-                <button className="clear-btn" onClick={() => setSearchQuery("")}>
-                  Clear
-                </button>
-              )}
-            </div>
-
-            <div className="search-results">
-              {loading && <div className="muted small">Loading live data...</div>}
-              {error && <div className="error-banner">{error}</div>}
-              {!loading && !error && searchResults.length === 0 && (
-                <div className="muted small">Nothing matched that search.</div>
-              )}
-
-              {!loading &&
-                !error &&
-                searchResults.map((item) => (
-                  <div key={item.id} className="result-card hover-lift">
-                    <div className="result-type">{item.type}</div>
-                    <div>
-                      <p className="result-title">{item.title}</p>
-                      <p className="result-subtitle">{item.subtitle}</p>
-                      <p className="result-meta">
-                        {item.meta} • {formatRelativeTime(item.timestamp)}
-                      </p>
-                    </div>
-                    <ArrowUpRight size={16} />
-                  </div>
-                ))}
+            <div className="search-meta">
+              <span className="chip">Tasks {tasks.length}</span>
+              <span className="chip">Projects {projects.length}</span>
+              <span className="chip">Users {user ? 1 : 0}</span>
             </div>
           </div>
-        </FadeIn>
 
-        <FadeIn delay={80}>
-          <div className="content-surface activity-panel">
-            <div className="section-title">
-              <div>
-                <p className="eyebrow">Activity</p>
-                <h3>Recent actions</h3>
+          <div className="search-input">
+            <Search size={18} />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Type to search by title, description, or status"
+            />
+            {searchQuery && (
+              <button className="clear-btn" onClick={() => setSearchQuery("")}>
+                Clear
+              </button>
+            )}
+          </div>
+
+          <div className="search-results">
+            {showSkeleton && (
+              <div className="skeleton-stack">
+                {skeletonItems.map((i) => (
+                  <div key={`search-skel-${i}`} className="skeleton-card" />
+                ))}
               </div>
-              <div className="chip tone">Live</div>
-            </div>
-
-            {loading && <div className="muted small">Loading activity...</div>}
+            )}
             {error && <div className="error-banner">{error}</div>}
-
-            {!loading && !error && activityFeed.length === 0 && (
-              <div className="muted small">No activity yet. Create a project or task to see updates.</div>
+            {!loading && !error && searchResults.length === 0 && (
+              <div className="muted small">Nothing matched that search.</div>
             )}
 
-            <div className="activity-list">
-              {!loading &&
-                !error &&
-                activityFeed.map((a) => (
-                  <div key={a.id} className="activity-card hover-lift">
-                    <div className="activity-icon">
-                      <Bell size={16} />
-                    </div>
-                    <div>
-                      <p className="activity-title">{a.title}</p>
-                      <p className="activity-meta">
-                        {a.label} · {a.meta}
-                      </p>
-                      <p className="activity-desc">{formatRelativeTime(a.timestamp)}</p>
-                    </div>
-                    <div className="activity-more">
-                      <Clock3 size={14} />
-                    </div>
+            {!loading &&
+              !error &&
+              searchResults.map((item) => (
+                <div key={item.id} className="result-card hover-lift">
+                  <div className="result-type">{item.type}</div>
+                  <div>
+                    <p className="result-title">{item.title}</p>
+                    <p className="result-subtitle">{item.subtitle}</p>
+                    <p className="result-meta">
+                      {item.meta} - {formatRelativeTime(item.timestamp)}
+                    </p>
                   </div>
-                ))}
-            </div>
+                  <ArrowUpRight size={16} />
+                </div>
+              ))}
           </div>
-        </FadeIn>
+        </div>
+
+        <div className={`content-surface activity-panel ${showSkeleton ? "is-loading" : ""}`}>
+          <div className="section-title">
+            <div>
+              <p className="eyebrow">Activity</p>
+              <h3>Recent actions</h3>
+            </div>
+            <div className="chip tone">Live</div>
+          </div>
+
+          {showSkeleton && (
+            <div className="skeleton-stack">
+              {skeletonItems.map((i) => (
+                <div key={`activity-skel-${i}`} className="skeleton-card" />
+              ))}
+            </div>
+          )}
+          {error && <div className="error-banner">{error}</div>}
+
+          {!loading && !error && activityFeed.length === 0 && (
+            <div className="muted small">No activity yet. Create a project or task to see updates.</div>
+          )}
+
+          <div className="activity-list">
+            {!loading &&
+              !error &&
+              activityFeed.map((a) => (
+                <div key={a.id} className="activity-card hover-lift">
+                  <div className="activity-icon">
+                    <Bell size={16} />
+                  </div>
+                  <div>
+                    <p className="activity-title">{a.title}</p>
+                    <p className="activity-meta">
+                      {a.label} - {a.meta}
+                    </p>
+                    <p className="activity-desc">{formatRelativeTime(a.timestamp)}</p>
+                  </div>
+                  <div className="activity-more">
+                    <Clock3 size={14} />
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
+

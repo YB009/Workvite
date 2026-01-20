@@ -1,4 +1,5 @@
 import prisma from "../../prisma/client.js";
+import { deleteByPrefix, getCache, setCache } from "../utils/cache.js";
 
 const isTaskComplete = (status = "") => {
   const normalized = status.toLowerCase();
@@ -7,6 +8,10 @@ const isTaskComplete = (status = "") => {
 
 export const getMyProfile = async (req, res) => {
   try {
+    const cacheKey = `profile:${req.user.id}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
+
     let profile = await prisma.profile.findUnique({
       where: { userId: req.user.id }
     });
@@ -37,7 +42,7 @@ export const getMyProfile = async (req, res) => {
       return p.tasks.every((t) => isTaskComplete(t.status));
     });
 
-    res.json({
+    const payload = {
       profile,
       user: {
         id: req.user.id,
@@ -55,7 +60,10 @@ export const getMyProfile = async (req, res) => {
         name: p.name,
         description: p.description
       }))
-    });
+    };
+
+    await setCache(cacheKey, payload, 15000);
+    res.json(payload);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to load profile" });
@@ -64,7 +72,7 @@ export const getMyProfile = async (req, res) => {
 
 export const updateMyProfile = async (req, res) => {
   try {
-    const { bio, avatarUrl, title } = req.body;
+    const { bio, avatarUrl, title, name } = req.body;
 
     const profile = await prisma.profile.upsert({
       where: { userId: req.user.id },
@@ -81,6 +89,14 @@ export const updateMyProfile = async (req, res) => {
       }
     });
 
+    if (name) {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { name }
+      });
+    }
+
+    await deleteByPrefix(`profile:${req.user.id}`);
     res.json(profile);
   } catch (error) {
     console.error(error);

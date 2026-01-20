@@ -1,27 +1,18 @@
-import express from "express";
+import { Router } from "express";
 import { verifyAuth } from "../middleware/authMiddleware.js";
 import { requireOrgAccess } from "../middleware/orgMiddleware.js";
-import { requireRole } from "../middleware/roleMiddleware.js";
 import {
   createTask,
-  getOrgTasks
+  getOrgTasks,
+  updateTaskStatus
 } from "../controllers/taskController.js";
 
-const router = express.Router();
+const router = Router();
 
 router.use(verifyAuth);
 
-router.post(
-  "/org/:orgId",
-  requireOrgAccess,
-  requireRole(["OWNER", "ADMIN", "MEMBER"]),
-  createTask
-);
-
-router.get(
-  "/org/:orgId",
-  requireOrgAccess,
-  getOrgTasks
-);
+router.get("/org/:orgId", requireOrgAccess, getOrgTasks);
+router.post("/org/:orgId", requireOrgAccess, createTask);
+router.patch("/org/:orgId/:taskId", requireOrgAccess, updateTaskStatus);
 
 export default router;

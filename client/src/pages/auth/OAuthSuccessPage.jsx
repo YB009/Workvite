@@ -57,7 +57,7 @@ export default function OAuthSuccessPage() {
             transform: `translate3d(${(pointer.x - 0.5) * 20}px, ${(pointer.y - 0.5) * 12}px, 0)`,
           }}
         >
-          Welcome to Team Task Manager
+          Welcome to WorkVite
         </h1>
         <p className="muted hero-sub">Click, scroll, or tap to continue</p>
       </div>

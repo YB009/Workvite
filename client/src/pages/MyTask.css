@@ -7,9 +7,10 @@
 .task-table__head,
 .task-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1.2fr;
   align-items: center;
   padding: 10px 12px;
+  column-gap: 12px;
 }
 
 .task-table__head {
@@ -24,13 +25,22 @@
   background: #fff;
   border: 1px solid #eef1f7;
   border-radius: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   box-shadow: 0 8px 26px rgba(15, 23, 42, 0.05);
 }
 
 .task-title {
   font-weight: 700;
   color: #0f172a;
+}
+
+.task-row span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cell-center {
+  justify-content: center;
 }
 
 .pill {
@@ -43,6 +53,7 @@
   font-size: 12px;
 }
 
+.priority-high,
 .priority-hard {
   background: #fee2e2;
   color: #ef4444;
@@ -53,17 +64,28 @@
   color: #f59e0b;
 }
 
-.priority-low {
+.priority-low,
+.priority-easy {
   background: #dcfce7;
   color: #22c55e;
 }
 
-.status-ongoing {
-  background: #dbeafe;
-  color: #2563eb;
+.status-danger {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
-.status-finished {
+.status-warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-success {
   background: #dcfce7;
-  color: #16a34a;
+  color: #166534;
+}
+
+.status-neutral {
+  background: #e5e7eb;
+  color: #374151;
 }
