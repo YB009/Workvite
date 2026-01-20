@@ -5,7 +5,7 @@ import { useAuthContext } from "../../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
 
 export default function CreateProjectPage() {
-  const { firebaseUser } = useAuthContext();
+  const { firebaseUser, activeOrganization } = useAuthContext();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -31,15 +31,18 @@ export default function CreateProjectPage() {
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${await firebaseUser.getIdToken()}` };
-      const orgRes = await axios.get("/api/orgs", { headers });
-      const org = orgRes.data?.[0];
-      if (!org) {
+      if (!activeOrganization) {
         setError("Join or create an organization first.");
         return;
       }
-      const payload = { name, description, status, organizationId: org.id };
-      // cover upload not supported backend yet; keeping preview only
-      await axios.post(`/api/projects/org/${org.id}`, payload, { headers });
+      const payload = {
+        name,
+        description,
+        status,
+        organizationId: activeOrganization.id,
+        coverImage: coverPreview || null
+      };
+      await axios.post(`/api/projects/org/${activeOrganization.id}`, payload, { headers });
       navigate("/projects");
     } catch (err) {
       console.error(err);

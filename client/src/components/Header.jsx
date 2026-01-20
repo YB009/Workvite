@@ -71,14 +71,13 @@ export default function Header() {
   return (
     <header className="header-root">
       <div className="header-brand">
-        <div className="brand-mark">
-          <div className="brand-dot" />
-        </div>
         <div className="org-switch org-switch--hero" ref={orgRef}>
           <button className="org-switch__button org-switch__button--hero" onClick={() => setOrgOpen((p) => !p)}>
             <span className="org-switch__label-text">Workspace</span>
-            <span className="org-switch__name">{activeOrganization?.name || "Organization"}</span>
-            <ChevronDown size={16} />
+            <span className="org-switch__name-row">
+              <ChevronDown size={16} />
+              <span>{activeOrganization?.name || "Organization"}</span>
+            </span>
           </button>
           {orgOpen && (
             <div className="org-switch__menu">

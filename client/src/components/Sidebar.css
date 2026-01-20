@@ -46,6 +46,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  position: relative;
 }
 
 .sidebar__workspace-label {
@@ -64,6 +65,10 @@
   font-weight: 600;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .dot {
@@ -89,4 +94,50 @@
   color: #b8bcd9;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.sidebar__workspace-menu {
+  position: absolute;
+  bottom: 58px;
+  left: 0;
+  right: 0;
+  background: #11153a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 8px 0;
+  box-shadow: 0 14px 30px rgba(8, 10, 30, 0.55);
+  z-index: 20;
+}
+
+.sidebar__workspace-title {
+  padding: 8px 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #98a0c9;
+}
+
+.sidebar__workspace-item {
+  width: 100%;
+  border: none;
+  background: none;
+  color: #e7e9f5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sidebar__workspace-item:hover,
+.sidebar__workspace-item.is-active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar__workspace-role {
+  font-size: 10px;
+  color: #c7b5ff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }

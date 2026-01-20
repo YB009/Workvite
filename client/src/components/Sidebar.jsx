@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import "./Sidebar.css";
 import { useAuthContext } from "../context/AuthContext.jsx";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -20,10 +22,22 @@ const navItems = [
 ];
 
 export default function Sidebar() {
-  const { activeOrganization } = useAuthContext();
+  const { activeOrganization, organizations, setActiveOrganization } = useAuthContext();
+  const [orgOpen, setOrgOpen] = useState(false);
+  const orgRef = useRef(null);
 
   const orgName = activeOrganization?.name || "Workspace";
   const orgRole = activeOrganization?.role || "";
+
+  useEffect(() => {
+    const handler = (event) => {
+      if (orgRef.current && !orgRef.current.contains(event.target)) {
+        setOrgOpen(false);
+      }
+    };
+    window.addEventListener("click", handler);
+    return () => window.removeEventListener("click", handler);
+  }, []);
   return (
     <aside className="sidebar">
       <div className="sidebar__top">
@@ -41,15 +55,35 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="sidebar__workspace">
+      <div className="sidebar__workspace" ref={orgRef}>
         <p className="sidebar__workspace-label">Workspace</p>
-        <div className="sidebar__workspace-chip">
+        <button className="sidebar__workspace-chip" type="button" onClick={() => setOrgOpen((p) => !p)}>
+          <ChevronDown size={14} />
           <span className="dot" />
           <div className="workspace-text">
             <span className="workspace-name">{orgName}</span>
             {orgRole && <span className="workspace-role">{orgRole}</span>}
           </div>
-        </div>
+        </button>
+        {orgOpen && (
+          <div className="sidebar__workspace-menu">
+            <div className="sidebar__workspace-title">Organizations</div>
+            {(organizations || []).map((org) => (
+              <button
+                key={org.id}
+                className={`sidebar__workspace-item ${org.id === activeOrganization?.id ? "is-active" : ""}`}
+                type="button"
+                onClick={() => {
+                  setActiveOrganization(org.id);
+                  setOrgOpen(false);
+                }}
+              >
+                <span>{org.name}</span>
+                {org.role && <span className="sidebar__workspace-role">{org.role}</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </aside>
   );

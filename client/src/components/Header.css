@@ -92,6 +92,15 @@
   color: #0f172a;
 }
 
+.org-switch__name-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
 .org-switch__menu {
   position: absolute;
   top: 44px;
