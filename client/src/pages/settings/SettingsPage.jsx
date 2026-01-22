@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuthContext } from "../../context/AuthContext.jsx";
 import axios from "../../api/axiosInstance";
 import { useNavigate, useParams } from "react-router-dom";
+import { PencilLine, CheckCircle2 } from "lucide-react";
 
 const isTaskComplete = (status = "") => {
   const normalized = status.toLowerCase();
@@ -167,7 +168,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="page-stack settings-page">
+    <div className={`page-stack settings-page ${editing ? "settings-page--editing" : ""}`}>
       <div className="settings-header">
         <div>
           <h1>{isSelf ? "My Profile" : "Profile"}</h1>
@@ -177,6 +178,7 @@ export default function SettingsPage() {
         </div>
         {isSelf && (
           <button className="btn-primary" onClick={() => (editing ? handleSave() : setEditing(true))} disabled={saving}>
+            {editing ? <CheckCircle2 size={16} /> : <PencilLine size={16} />}
             {editing ? "Save profile" : "Edit profile"}
           </button>
         )}
@@ -184,7 +186,7 @@ export default function SettingsPage() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      <section className="settings-card profile-overview">
+      <section className={`settings-card profile-overview ${editing ? "is-editing" : ""}`}>
         <div className="profile-avatar">
           <img src={avatarSrc} alt="profile" />
           {isSelf && editing && (

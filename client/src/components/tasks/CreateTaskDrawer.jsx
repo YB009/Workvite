@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react";
 
-export default function CreateTaskDrawer({ open, onClose, onCreate, projects = [] }) {
+export default function CreateTaskDrawer({
+  open,
+  onClose,
+  onCreate,
+  projects = [],
+  members = [],
+  fixedProjectId,
+  fixedProjectName
+}) {
+  const initialsFrom = (value = "") => {
+    const parts = String(value).trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  };
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -8,13 +22,29 @@ export default function CreateTaskDrawer({ open, onClose, onCreate, projects = [
     status: "todo",
     dueDate: "",
     projectId: "",
+    assigneeIds: []
   });
 
   useEffect(() => {
-    if (open) {
-      setForm((f) => ({ ...f, projectId: projects?.[0]?.id || "" }));
-    }
-  }, [open, projects]);
+    if (!open) return;
+    setForm((f) => ({
+      ...f,
+      projectId: fixedProjectId || projects?.[0]?.id || "",
+      assigneeIds: f.assigneeIds.length ? f.assigneeIds : []
+    }));
+  }, [open, projects, fixedProjectId]);
+
+  const toggleAssignee = (userId) => {
+    setForm((prev) => {
+      const exists = prev.assigneeIds.includes(userId);
+      return {
+        ...prev,
+        assigneeIds: exists
+          ? prev.assigneeIds.filter((id) => id !== userId)
+          : [...prev.assigneeIds, userId]
+      };
+    });
+  };
 
   if (!open) return null;
 
@@ -65,16 +95,58 @@ export default function CreateTaskDrawer({ open, onClose, onCreate, projects = [
             <span>Due date</span>
             <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
           </label>
-          <label className="form-field" style={{ flex: 1 }}>
-            <span>Project</span>
-            <select value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })}>
-              {projects?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          {!fixedProjectId && (
+            <label className="form-field" style={{ flex: 1 }}>
+              <span>Project</span>
+              <select value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })}>
+                {projects?.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {fixedProjectId && (
+            <div className="form-field" style={{ flex: 1 }}>
+              <span>Project</span>
+              <div className="pill" style={{ backgroundColor: "#eef2ff", color: "#3730a3", padding: "10px 12px" }}>
+                {fixedProjectName || "Selected project"}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="form-field">
+          <span>Assignees</span>
+          <div className="assignee-grid">
+            {members.length === 0 && <p className="muted">No team members yet.</p>}
+            {members.map((member) => {
+              const memberId = member.userId || member.id;
+              const displayName = member.name || member.email || "Unnamed";
+              const checked = form.assigneeIds.includes(memberId);
+              return (
+                <label
+                  key={memberId}
+                  className={`assignee-card ${checked ? "is-selected" : ""}`}
+                >
+                  <input
+                    className="assignee-check"
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleAssignee(memberId)}
+                  />
+                  <span className="assignee-avatar">
+                    {initialsFrom(displayName)}
+                  </span>
+                  <span className="assignee-meta">
+                    <span className="assignee-name">{displayName}</span>
+                    {member.email && <span className="assignee-email">{member.email}</span>}
+                  </span>
+                  <span className="assignee-state">{checked ? "Selected" : "Tap to add"}</span>
+                </label>
+              );
+            })}
+          </div>
         </div>
         <button
           className="btn-primary"

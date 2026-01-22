@@ -45,10 +45,11 @@ const formatRelativeTime = (value) => {
 
 export default function Dashboard() {
   const { firebaseUser, user, activeOrganization } = useAuthContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [debouncedQuery, setDebouncedQuery] = useState(searchParams.get("q") || "");
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState("");
@@ -56,6 +57,7 @@ export default function Dashboard() {
   const [hasRetriedAuth, setHasRetriedAuth] = useState(false);
   const inflightRef = useRef(false);
   const lastOrgRef = useRef("");
+  const searchDebounceRef = useRef(null);
 
   const loadDashboard = useCallback(async () => {
     if (!firebaseUser || inflightRef.current) return;
@@ -131,16 +133,13 @@ export default function Dashboard() {
   }, [searchString]);
 
   useEffect(() => {
-    const next = new URLSearchParams(searchParams);
-    if (searchQuery) {
-      next.set("q", searchQuery);
-    } else {
-      next.delete("q");
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
     }
-    if (next.toString() !== searchParams.toString()) {
-      setSearchParams(next, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(searchDebounceRef.current);
   }, [searchQuery]);
 
   const activeTasks = useMemo(
@@ -153,7 +152,7 @@ export default function Dashboard() {
   );
 
   const searchResults = useMemo(() => {
-    const term = searchQuery.trim().toLowerCase();
+    const term = debouncedQuery.trim().toLowerCase();
     const pool = [
       ...tasks.map((t) => ({
         id: `task-${t.id}`,
@@ -195,7 +194,7 @@ export default function Dashboard() {
           .some((val) => String(val).toLowerCase().includes(term))
       )
       .slice(0, 8);
-  }, [projects, searchQuery, tasks, user]);
+  }, [projects, debouncedQuery, tasks, user]);
 
   const activityFeed = useMemo(() => {
     const events = [];
@@ -322,6 +321,8 @@ export default function Dashboard() {
           <div className="search-input">
             <Search size={18} />
             <input
+              id="dashboard-search"
+              name="dashboard-search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Type to search by title, description, or status"

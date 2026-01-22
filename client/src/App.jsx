@@ -16,6 +16,7 @@ import TaskBoardPage from "./pages/tasks/TaskBoardPage.jsx";
 import TaskDetailsPage from "./pages/tasks/TaskDetailsPage.jsx";
 import CreateTaskPage from "./pages/tasks/CreateTaskPage.jsx";
 import MyTask from "./pages/MyTask.jsx";
+import AllTasksPage from "./pages/tasks/AllTasksPage.jsx";
 import ActivityPage from "./pages/activity/ActivityPage.jsx";
 import TeamPage from "./pages/team/TeamPage.jsx";
 import SettingsPage from "./pages/settings/SettingsPage.jsx";
@@ -90,6 +91,7 @@ function App() {
           <Route path="projects/edit" element={<EditProjectPage />} />
           <Route path="tasks" element={<TaskBoardPage />} />
           <Route path="tasks/list" element={<MyTask />} />
+          <Route path="tasks/all" element={<AllTasksPage />} />
           <Route path="tasks/details" element={<TaskDetailsPage />} />
           <Route path="tasks/create" element={<CreateTaskPage />} />
           <Route path="activity" element={<ActivityPage />} />

@@ -15,3 +15,13 @@ export const fetchActivity = async ({ token, filters, page = 1, pageSize = 25 })
   const res = await axios.get("/api/activity", { headers, params });
   return res.data;
 };
+
+export const logActivity = async ({ token, type, message, projectId, taskId }) => {
+  const headers = { Authorization: `Bearer ${token}` };
+  const res = await axios.post(
+    "/api/activity",
+    { type, message, projectId, taskId },
+    { headers }
+  );
+  return res.data;
+};

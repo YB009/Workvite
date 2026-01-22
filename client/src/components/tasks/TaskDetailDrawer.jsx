@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAuthContext } from "../../context/AuthContext.jsx";
+import { logActivity } from "../../api/activityApi.js";
+import axios from "../../api/axiosInstance";
 
 const formatDate = (value) => {
   if (!value) return "No date";
@@ -19,6 +22,24 @@ const loadMeta = () => {
   }
 };
 
+const normalizeList = (list = []) => {
+  return list.map((item, idx) => {
+    if (typeof item === "string") {
+      return { id: `${Date.now()}-${idx}`, text: item };
+    }
+    return {
+      id: item.id || `${Date.now()}-${idx}`,
+      text: item.text || "",
+      author: item.author || null
+    };
+  });
+};
+
+const normalizeMeta = (meta) => ({
+  objectives: normalizeList(meta?.objectives || []),
+  comments: normalizeList(meta?.comments || [])
+});
+
 const saveMeta = (meta) => {
   try {
     localStorage.setItem(storageKey, JSON.stringify(meta));
@@ -27,16 +48,41 @@ const saveMeta = (meta) => {
   }
 };
 
-export default function TaskDetailDrawer({ task, onClose, showBack, onBack, onStatusChange }) {
-  const [meta, setMeta] = useState({ objectives: [], attachments: [], comments: [] });
+export default function TaskDetailDrawer({
+  task,
+  onClose,
+  showBack,
+  onBack,
+  onStatusChange,
+  onAssigneesChange,
+  onAttachmentsChange,
+  members = []
+}) {
+  const { firebaseUser, activeOrganization } = useAuthContext();
+  const [meta, setMeta] = useState({ objectives: [], comments: [] });
+  const [attachments, setAttachments] = useState([]);
+  const [editingObjectiveId, setEditingObjectiveId] = useState(null);
+  const [editingObjectiveText, setEditingObjectiveText] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
+  const initialsFrom = (value = "") => {
+    const parts = String(value).trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  };
 
   useEffect(() => {
     const all = loadMeta();
     if (task?.id && all[task.id]) {
-      setMeta(all[task.id]);
+      setMeta(normalizeMeta(all[task.id]));
     } else {
-      setMeta({ objectives: [], attachments: [], comments: [] });
+      setMeta({ objectives: [], comments: [] });
     }
+  }, [task]);
+
+  useEffect(() => {
+    setAttachments(task?.attachments || []);
   }, [task]);
 
   const updateMeta = (next) => {
@@ -47,33 +93,81 @@ export default function TaskDetailDrawer({ task, onClose, showBack, onBack, onSt
     saveMeta(all);
   };
 
+  const pushActivity = async (type, message) => {
+    if (!firebaseUser || !task) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      await logActivity({
+        token,
+        type,
+        message,
+        projectId: task.projectId || task.project?.id,
+        taskId: task.id
+      });
+    } catch (err) {
+      console.error("Activity log failed", err);
+    }
+  };
+
   const handleAttachment = async (file) => {
-    if (!file) return;
+    if (!file || !firebaseUser || !activeOrganization || !task?.id) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      const entry = { name: file.name, size: file.size, dataUrl: reader.result };
-      const next = { ...meta, attachments: [...meta.attachments, entry] };
-      updateMeta(next);
+    reader.onload = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${await firebaseUser.getIdToken()}` };
+        const res = await axios.post(
+          `/api/tasks/org/${activeOrganization.id}/${task.id}/attachments`,
+          {
+            name: file.name,
+            size: file.size,
+            mimeType: file.type,
+            dataUrl: reader.result
+          },
+          { headers }
+        );
+        setAttachments((prev) => {
+          const next = [res.data, ...prev];
+          onAttachmentsChange && onAttachmentsChange(next);
+          return next;
+        });
+      } catch (err) {
+        console.error(err);
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const removeAttachment = (name, dataUrl) => {
-    const next = {
-      ...meta,
-      attachments: meta.attachments.filter((a) => !(a.name === name && a.dataUrl === dataUrl)),
-    };
-    updateMeta(next);
+  const removeAttachment = async (attachmentId) => {
+    if (!firebaseUser || !activeOrganization || !task?.id || !attachmentId) return;
+    try {
+      const headers = { Authorization: `Bearer ${await firebaseUser.getIdToken()}` };
+      await axios.delete(
+        `/api/tasks/org/${activeOrganization.id}/${task.id}/attachments/${attachmentId}`,
+        { headers }
+      );
+      setAttachments((prev) => {
+        const next = prev.filter((a) => a.id !== attachmentId);
+        onAttachmentsChange && onAttachmentsChange(next);
+        return next;
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const headerAccent = useMemo(() => {
     if (!task) return "#eef2ff";
-    if ((task.status || "").toLowerCase().includes("progress")) return "#dbeafe";
-    if ((task.status || "").toLowerCase().includes("done")) return "#dcfce7";
+    const status = (task.status || "").toLowerCase();
+    if (status.includes("progress")) return "#dbeafe";
+    if (status.includes("done") || status.includes("complete")) return "#dcfce7";
     return "#fef3c7";
   }, [task]);
 
   if (!task) return null;
+
+  const selectedAssignees = new Set(
+    (task.assignees || []).map((a) => a.userId).filter(Boolean)
+  );
 
   return (
     <div className="drawer drawer--panel">
@@ -81,7 +175,7 @@ export default function TaskDetailDrawer({ task, onClose, showBack, onBack, onSt
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {showBack && (
             <button className="btn-ghost" onClick={onBack}>
-              ← Back
+              Back
             </button>
           )}
           <div>
@@ -110,8 +204,8 @@ export default function TaskDetailDrawer({ task, onClose, showBack, onBack, onSt
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <AvatarStack task={task} />
             <div style={{ display: "flex", gap: 8 }}>
-              <Metric icon="📌" label="Objectives" value={meta.objectives.length} />
-              <Metric icon="📎" label="Files" value={meta.attachments.length} />
+              <Metric icon="OBJ" label="Objectives" value={meta.objectives.length} />
+              <Metric icon="FILE" label="Files" value={attachments.length} />
             </div>
           </div>
         </div>
@@ -122,7 +216,47 @@ export default function TaskDetailDrawer({ task, onClose, showBack, onBack, onSt
         </div>
         <div className="stack">
           <div className="label">Assignee</div>
-          <div className="muted">{task.user?.name || task.user?.email || "Unassigned"}</div>
+          {members.length === 0 && (
+            <div className="muted">{task.user?.name || task.user?.email || "Unassigned"}</div>
+          )}
+          {members.length > 0 && (
+            <div className="assignee-grid">
+              {members.map((member) => {
+                const userId = member.userId || member.id;
+                const checked = selectedAssignees.has(userId);
+                const displayName = member.name || member.email || "Unnamed";
+                return (
+                  <label
+                    key={userId}
+                    className={`assignee-card ${checked ? "is-selected" : ""}`}
+                  >
+                    <input
+                      className="assignee-check"
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        const next = new Set(selectedAssignees);
+                        if (checked) {
+                          next.delete(userId);
+                        } else {
+                          next.add(userId);
+                        }
+                        onAssigneesChange && onAssigneesChange(Array.from(next));
+                      }}
+                    />
+                    <span className="assignee-avatar">
+                      {initialsFrom(displayName)}
+                    </span>
+                    <span className="assignee-meta">
+                      <span className="assignee-name">{displayName}</span>
+                      {member.email && <span className="assignee-email">{member.email}</span>}
+                    </span>
+                    <span className="assignee-state">{checked ? "Assigned" : "Tap to assign"}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="stack">
           <div className="label">Description</div>
@@ -144,7 +278,7 @@ export default function TaskDetailDrawer({ task, onClose, showBack, onBack, onSt
 
         <div className="stack">
           <div className="label">Attachments</div>
-          <AttachmentGrid attachments={meta.attachments} onRemove={removeAttachment} />
+          <AttachmentGrid attachments={attachments} onRemove={removeAttachment} />
           <label className="upload-drop">
             <input
               type="file"
@@ -159,14 +293,73 @@ export default function TaskDetailDrawer({ task, onClose, showBack, onBack, onSt
           <div className="label">Objectives</div>
           <div className="stack">
             {meta.objectives.length === 0 && <p className="muted">No objectives yet.</p>}
-            {meta.objectives.map((o, idx) => (
-              <label key={`${o}-${idx}`} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {meta.objectives.map((o) => (
+              <label key={o.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <input type="checkbox" />
-                {o}
+                {editingObjectiveId === o.id ? (
+                  <>
+                    <input
+                      className="form-field"
+                      style={{ padding: 6, flex: 1 }}
+                      value={editingObjectiveText}
+                      onChange={(e) => setEditingObjectiveText(e.target.value)}
+                    />
+                    <button
+                      className="btn-ghost"
+                      type="button"
+                      onClick={() => {
+                        const next = {
+                          ...meta,
+                          objectives: meta.objectives.map((item) =>
+                            item.id === o.id ? { ...item, text: editingObjectiveText.trim() } : item
+                          )
+                        };
+                        updateMeta(next);
+                        setEditingObjectiveId(null);
+                        setEditingObjectiveText("");
+                        pushActivity("OBJECTIVE_UPDATED", "updated an objective");
+                      }}
+                    >
+                      Save
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ flex: 1 }}>{o.text}</span>
+                    <button
+                      className="btn-ghost"
+                      type="button"
+                      onClick={() => {
+                        setEditingObjectiveId(o.id);
+                        setEditingObjectiveText(o.text);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      type="button"
+                      onClick={() => {
+                        const next = {
+                          ...meta,
+                          objectives: meta.objectives.filter((item) => item.id !== o.id)
+                        };
+                        updateMeta(next);
+                        pushActivity("OBJECTIVE_REMOVED", "removed an objective");
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </>
+                )}
               </label>
             ))}
             <ObjectiveInput
-              onAdd={(text) => updateMeta({ ...meta, objectives: [...meta.objectives, text] })}
+              onAdd={(text) => {
+                const nextItem = { id: `${Date.now()}-${Math.random()}`, text };
+                updateMeta({ ...meta, objectives: [...meta.objectives, nextItem] });
+                pushActivity("OBJECTIVE_ADDED", "added an objective");
+              }}
             />
           </div>
         </div>
@@ -175,13 +368,89 @@ export default function TaskDetailDrawer({ task, onClose, showBack, onBack, onSt
           <div className="label">Comments</div>
           <div className="comment-stack">
             {meta.comments.length === 0 && <p className="muted">No comments yet.</p>}
-            {meta.comments.map((c, idx) => (
-              <div key={`${c}-${idx}`} className="comment-chip">
-                {c}
+            {meta.comments.map((c) => (
+              <div key={c.id} className="comment-chip">
+                {c.author && (
+                  <div className="comment-author">
+                    <span className="comment-avatar">
+                      {initialsFrom(c.author.name || c.author.email)}
+                    </span>
+                    <span className="comment-author-meta">
+                      <span className="comment-author-name">{c.author.name || c.author.email}</span>
+                      {c.author.email && <span className="comment-author-email">{c.author.email}</span>}
+                    </span>
+                  </div>
+                )}
+                {editingCommentId === c.id ? (
+                  <>
+                    <input
+                      className="form-field"
+                      style={{ padding: 6, flex: 1 }}
+                      value={editingCommentText}
+                      onChange={(e) => setEditingCommentText(e.target.value)}
+                    />
+                    <button
+                      className="btn-ghost"
+                      type="button"
+                      onClick={() => {
+                        const next = {
+                          ...meta,
+                          comments: meta.comments.map((item) =>
+                            item.id === c.id ? { ...item, text: editingCommentText.trim() } : item
+                          )
+                        };
+                        updateMeta(next);
+                        setEditingCommentId(null);
+                        setEditingCommentText("");
+                        pushActivity("COMMENT_UPDATED", "updated a comment");
+                      }}
+                    >
+                      Save
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ flex: 1 }}>{c.text}</span>
+                    <button
+                      className="btn-ghost"
+                      type="button"
+                      onClick={() => {
+                        setEditingCommentId(c.id);
+                        setEditingCommentText(c.text);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      type="button"
+                      onClick={() => {
+                        const next = {
+                          ...meta,
+                          comments: meta.comments.filter((item) => item.id !== c.id)
+                        };
+                        updateMeta(next);
+                        pushActivity("COMMENT_REMOVED", "removed a comment");
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </>
+                )}
               </div>
             ))}
           </div>
-          <CommentInput onAdd={(text) => updateMeta({ ...meta, comments: [...meta.comments, text] })} />
+          <CommentInput
+            onAdd={(text) => {
+              const author = {
+                name: firebaseUser?.displayName || task.user?.name || task.user?.email || "User",
+                email: firebaseUser?.email || task.user?.email || ""
+              };
+              const nextItem = { id: `${Date.now()}-${Math.random()}`, text, author };
+              updateMeta({ ...meta, comments: [...meta.comments, nextItem] });
+              pushActivity("COMMENT_ADDED", "added a comment");
+            }}
+          />
         </div>
       </div>
     </div>
@@ -299,7 +568,7 @@ const AttachmentGrid = ({ attachments, onRemove }) => {
       <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))" }}>
         {attachments.map((a, idx) => (
           <div
-            key={`${a.name}-${idx}`}
+            key={a.id || `${a.name}-${idx}`}
             style={{
               border: "1px solid #e5e7eb",
               borderRadius: 10,
@@ -322,10 +591,17 @@ const AttachmentGrid = ({ attachments, onRemove }) => {
             <button
               className="btn-ghost"
               style={{ position: "absolute", top: 6, right: 6 }}
-              onClick={() => onRemove(a.name, a.dataUrl)}
+              onClick={() => onRemove(a.id)}
             >
-              ×
+              A-
             </button>
+            <a
+              href={a.dataUrl}
+              download={a.name}
+              style={{ display: "inline-flex", marginTop: 6, fontSize: 12, color: "#4338ca" }}
+            >
+              Download
+            </a>
           </div>
         ))}
       </div>

@@ -7,6 +7,7 @@ import CreateTaskDrawer from "../../components/tasks/CreateTaskDrawer.jsx";
 import "../../App.css";
 import axios from "../../api/axiosInstance";
 import { useAuthContext } from "../../context/AuthContext.jsx";
+import { fetchTeamMembers } from "../../api/teamApi.js";
 
 const normalizeStatusKey = (status = "") => {
   const s = status.toLowerCase();
@@ -26,6 +27,7 @@ export default function TaskBoardPage() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTask, setActiveTask] = useState(null);
@@ -42,6 +44,7 @@ export default function TaskBoardPage() {
         if (!activeOrganization) {
           setTasks([]);
           setProjects([]);
+          setMembers([]);
           return;
         }
         const headers = { Authorization: `Bearer ${await firebaseUser.getIdToken()}` };
@@ -51,6 +54,11 @@ export default function TaskBoardPage() {
         ]);
         setTasks(taskRes.data || []);
         setProjects(projectRes.data || []);
+
+        const token = await firebaseUser.getIdToken();
+        const team = await fetchTeamMembers({ token, orgId: activeOrganization.id });
+        const list = (team?.items || []).filter((m) => !m.isInvite);
+        setMembers(list);
       } catch (err) {
         console.error(err);
         setError("Couldn't load tasks. Check backend or auth.");
@@ -66,7 +74,8 @@ export default function TaskBoardPage() {
     tasks.forEach((t) => {
       const key = normalizeStatusKey(t.status);
       buckets[key].push(t);
-      if (t.userId && t.userId === user?.id) {
+      const hasAssignees = Array.isArray(t.assignees) && t.assignees.length > 0;
+      if (hasAssignees && t.assignees.some((a) => a.userId === user?.id)) {
         buckets.assigned.push(t);
       }
     });
@@ -92,12 +101,13 @@ export default function TaskBoardPage() {
   };
 
   const onDrop = async (toKey) => {
-    if (!dragging || toKey === "assigned") return;
+    if (!dragging || toKey === "assigned" || dragging.from === "assigned") return;
     const newStatus = statusLabels[toKey] || toKey;
     const nextTasks = tasks.map((t) =>
       t.id === dragging.task.id ? { ...t, status: newStatus } : t
     );
     setTasks(nextTasks);
+    setActiveTask((t) => (t && t.id === dragging.task.id ? { ...t, status: newStatus } : t));
     setDragging(null);
     await persistStatus(dragging.task.id, newStatus);
   };
@@ -127,7 +137,7 @@ export default function TaskBoardPage() {
       <div className="toolbar">
         <h1>Task Board</h1>
         <div className="actions">
-          <button className="btn-ghost" onClick={() => navigate("/tasks/list")}>All tasks</button>
+          <button className="btn-ghost" onClick={() => navigate("/tasks/all")}>All tasks</button>
           <button className="btn-primary" onClick={() => setShowCreate(true)}>Create task</button>
         </div>
       </div>
@@ -147,7 +157,13 @@ export default function TaskBoardPage() {
                 onDrop={col.locked ? undefined : () => onDrop(col.key)}
               >
                 {col.tasks.map((task) => (
-                  <TaskCard key={task.id} task={task} onClick={() => setActiveTask(task)} />
+                  <div
+                    key={task.id}
+                    draggable={!col.locked}
+                    onDragStart={() => (!col.locked ? onDragStart(task, col.key) : undefined)}
+                  >
+                    <TaskCard task={task} onClick={() => setActiveTask(task)} />
+                  </div>
                 ))}
               </TaskColumn>
             ))}
@@ -158,6 +174,7 @@ export default function TaskBoardPage() {
       <TaskDetailDrawer
         task={activeTask}
         onClose={() => setActiveTask(null)}
+        members={members}
         onStatusChange={async (newStatus) => {
           if (!activeTask) return;
           const nextTasks = tasks.map((t) =>
@@ -167,8 +184,37 @@ export default function TaskBoardPage() {
           setActiveTask((t) => (t ? { ...t, status: newStatus } : t));
           await persistStatus(activeTask.id, newStatus);
         }}
+        onAssigneesChange={async (assigneeIds) => {
+          if (!activeTask || !activeOrganization || !firebaseUser) return;
+          try {
+            const headers = { Authorization: `Bearer ${await firebaseUser.getIdToken()}` };
+            const res = await axios.patch(
+              `/api/tasks/org/${activeOrganization.id}/${activeTask.id}/assignees`,
+              { assigneeIds },
+              { headers }
+            );
+            setTasks((prev) => prev.map((t) => (t.id === activeTask.id ? res.data : t)));
+            setActiveTask(res.data);
+          } catch (err) {
+            console.error(err);
+            setError("Failed to update assignees.");
+          }
+        }}
+        onAttachmentsChange={(nextAttachments) => {
+          if (!activeTask) return;
+          setTasks((prev) =>
+            prev.map((t) => (t.id === activeTask.id ? { ...t, attachments: nextAttachments } : t))
+          );
+          setActiveTask((t) => (t ? { ...t, attachments: nextAttachments } : t));
+        }}
       />
-      <CreateTaskDrawer open={showCreate} onClose={() => setShowCreate(false)} onCreate={handleCreate} projects={projects} />
+      <CreateTaskDrawer
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreate={handleCreate}
+        projects={projects}
+        members={members}
+      />
     </div>
   );
 }

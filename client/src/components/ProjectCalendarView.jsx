@@ -12,7 +12,7 @@ const normalizeStatus = (status = "") => {
   return "Not Started";
 };
 
-export default function ProjectCalendarView({ tasks = [] }) {
+export default function ProjectCalendarView({ tasks = [], onTaskClick }) {
   const navigate = useNavigate();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
@@ -99,7 +99,7 @@ export default function ProjectCalendarView({ tasks = [] }) {
                   {list.map((t) => (
                     <div
                       key={t.id}
-                      onClick={() => navigate(`/tasks/details?id=${t.id}`)}
+                      onClick={() => (onTaskClick ? onTaskClick(t) : navigate(`/tasks/details?id=${t.id}`))}
                       style={{
                         background: "#eef2ff",
                         border: "1px solid #e5e7eb",

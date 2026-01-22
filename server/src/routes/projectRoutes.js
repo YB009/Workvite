@@ -9,6 +9,7 @@ import {
   revokeProjectAccess,
   updateProject
 } from "../controllers/projectController.js";
+import { deleteProject } from "../controllers/projectController.js";
 
 const router = express.Router();
 
@@ -46,6 +47,13 @@ router.delete(
   requireOrgAccess,
   requireRole(["OWNER", "ADMIN"]),
   revokeProjectAccess
+);
+
+router.delete(
+  "/org/:orgId/projects/:projectId",
+  requireOrgAccess,
+  requireRole(["OWNER", "ADMIN"]),
+  deleteProject
 );
 
 export default router;

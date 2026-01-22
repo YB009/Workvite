@@ -1,12 +1,11 @@
-import "./MyTask.css";
+import "../MyTask.css";
 import { useEffect, useMemo, useState } from "react";
-import { FadeIn } from "../utils/animations.jsx";
-import { useAuthContext } from "../context/AuthContext.jsx";
-import axios from "../api/axiosInstance";
-import TaskDetailDrawer from "../components/tasks/TaskDetailDrawer.jsx";
-import CreateTaskDrawer from "../components/tasks/CreateTaskDrawer.jsx";
-import { fetchTeamMembers } from "../api/teamApi.js";
 import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "../../context/AuthContext.jsx";
+import axios from "../../api/axiosInstance";
+import TaskDetailDrawer from "../../components/tasks/TaskDetailDrawer.jsx";
+import CreateTaskDrawer from "../../components/tasks/CreateTaskDrawer.jsx";
+import { fetchTeamMembers } from "../../api/teamApi.js";
 
 const statusColor = {
   "not started": "danger",
@@ -30,16 +29,23 @@ const formatDate = (value) => {
   }
 };
 
-export default function MyTask() {
-  const { firebaseUser, user, activeOrganization } = useAuthContext();
+const initialsFrom = (name = "") => {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+};
+
+export default function AllTasksPage() {
+  const { firebaseUser, activeOrganization } = useAuthContext();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTask, setActiveTask] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [projects, setProjects] = useState([]);
-  const [members, setMembers] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -47,12 +53,13 @@ export default function MyTask() {
       setLoading(true);
       setError("");
       try {
-        const headers = { Authorization: `Bearer ${await firebaseUser.getIdToken()}` };
         if (!activeOrganization) {
           setTasks([]);
-          setError("No organization found.");
+          setProjects([]);
+          setMembers([]);
           return;
         }
+        const headers = { Authorization: `Bearer ${await firebaseUser.getIdToken()}` };
         const [taskRes, projectRes] = await Promise.all([
           axios.get(`/api/tasks/org/${activeOrganization.id}`, { headers }),
           axios.get(`/api/projects/org/${activeOrganization.id}`, { headers }),
@@ -73,13 +80,12 @@ export default function MyTask() {
     load();
   }, [firebaseUser, activeOrganization]);
 
-  const myTasks = useMemo(() => {
-    if (!user) return tasks;
-    return tasks.filter((t) => {
-      const hasAssignees = Array.isArray(t.assignees) && t.assignees.length > 0;
-      return hasAssignees && t.assignees.some((a) => a.userId === user.id);
-    });
-  }, [tasks, user]);
+  const tableRows = useMemo(() => {
+    return tasks.map((t) => ({
+      ...t,
+      statusLabel: toStatus(t.status)
+    }));
+  }, [tasks]);
 
   return (
     <div className="page-stack">
@@ -88,44 +94,63 @@ export default function MyTask() {
           <button className="btn-ghost" type="button" onClick={() => navigate(-1)}>
             Back
           </button>
-          <h1>My Task</h1>
+          <h1>All Tasks</h1>
         </div>
         <div className="actions">
           <button className="btn-primary" onClick={() => setShowCreate(true)}>Create task</button>
         </div>
       </div>
+
       <div className="content-surface">
         {loading && <div className="muted">Loading tasks...</div>}
         {error && <div className="error-banner">{error}</div>}
         {!loading && !error && (
-          <div className="task-table">
+          <div className="task-table task-table--all">
             <div className="task-table__head">
               <span>Task</span>
               <span>Due Date</span>
               <span>Priority</span>
               <span>Status</span>
+              <span>Assigned to</span>
               <span>Project</span>
             </div>
             <div className="task-table__body">
-              {myTasks.length === 0 && <div className="muted" style={{ padding: 12 }}>No tasks assigned yet.</div>}
-              {myTasks.map((t, idx) => {
-                const status = toStatus(t.status);
-                return (
-                  <FadeIn key={t.id} delay={idx * 40}>
-                    <div className="task-row" style={{ cursor: "pointer" }} onClick={() => setActiveTask(t)}>
-                      <span className="task-title">{t.title}</span>
-                      <span className="cell-center">{formatDate(t.dueDate || t.updatedAt)}</span>
-                      <span className="cell-center"><span className={`pill priority-${(t.priority || "").toLowerCase()}`}>{t.priority || "-"}</span></span>
-                      <span className="cell-center"><span className={`pill status-${statusColor[status.toLowerCase()] || "neutral"}`}>{status}</span></span>
-                      <span className="cell-center">{t.project?.name || "—"}</span>
-                    </div>
-                  </FadeIn>
-                );
-              })}
+              {tableRows.length === 0 && <div className="muted" style={{ padding: 12 }}>No tasks yet.</div>}
+              {tableRows.map((t) => (
+                <div
+                  key={t.id}
+                  className="task-row task-row--all"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setActiveTask(t)}
+                >
+                  <span className="task-title">{t.title}</span>
+                  <span className="cell-center">{formatDate(t.dueDate || t.updatedAt)}</span>
+                  <span className="cell-center">
+                    <span className={`pill priority-${(t.priority || "").toLowerCase()}`}>{t.priority || "-"}</span>
+                  </span>
+                  <span className="cell-center">
+                    <span className={`pill status-${statusColor[t.statusLabel.toLowerCase()] || "neutral"}`}>
+                      {t.statusLabel}
+                    </span>
+                  </span>
+                  <span className="cell-center">
+                    <span className="assignee-stack">
+                      {(t.assignees || []).length === 0 && <span className="muted">Unassigned</span>}
+                      {(t.assignees || []).map((a, idx) => (
+                        <span key={a.userId || idx} className="assignee-pill" title={a.user?.name || a.user?.email}>
+                          {initialsFrom(a.user?.name || a.user?.email || "?")}
+                        </span>
+                      ))}
+                    </span>
+                  </span>
+                  <span className="cell-center">{t.project?.name || "-"}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
       </div>
+
       <TaskDetailDrawer
         task={activeTask}
         onClose={() => setActiveTask(null)}
@@ -156,6 +181,7 @@ export default function MyTask() {
           setActiveTask((t) => (t ? { ...t, attachments: nextAttachments } : t));
         }}
       />
+
       <CreateTaskDrawer
         open={showCreate}
         onClose={() => setShowCreate(false)}

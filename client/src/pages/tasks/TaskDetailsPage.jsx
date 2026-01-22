@@ -6,7 +6,7 @@ import axios from "../../api/axiosInstance";
 import { useAuthContext } from "../../context/AuthContext.jsx";
 
 export default function TaskDetailsPage() {
-  const { firebaseUser } = useAuthContext();
+  const { firebaseUser, activeOrganization } = useAuthContext();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [task, setTask] = useState(location.state?.task || null);
@@ -22,16 +22,14 @@ export default function TaskDetailsPage() {
         setLoading(false);
         return;
       }
+      if (!activeOrganization) {
+        setError("No organization found.");
+        setLoading(false);
+        return;
+      }
       try {
         const headers = { Authorization: `Bearer ${await firebaseUser.getIdToken()}` };
-        const orgRes = await axios.get("/api/orgs", { headers });
-        const org = orgRes.data?.[0];
-        if (!org) {
-          setError("No organization found.");
-          setLoading(false);
-          return;
-        }
-        const tasksRes = await axios.get(`/api/tasks/org/${org.id}`, { headers });
+        const tasksRes = await axios.get(`/api/tasks/org/${activeOrganization.id}`, { headers });
         const found = (tasksRes.data || []).find((t) => t.id === taskId);
         if (found) setTask(found);
         else setError("Task not found.");
@@ -43,7 +41,7 @@ export default function TaskDetailsPage() {
       }
     };
     load();
-  }, [firebaseUser, searchParams, task]);
+  }, [firebaseUser, activeOrganization, searchParams, task]);
 
   return (
     <div className="page-stack">

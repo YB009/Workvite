@@ -19,6 +19,7 @@ model User {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   activities         Activity[]
+  taskAttachments    TaskAttachment[]
   invitesSent        Invite[]        @relation("InviteInviter")
   memberships        Membership[]
   ownedOrganizations Organization[]
@@ -27,6 +28,7 @@ model User {
   projectAccess      ProjectAccess[]
   projectMembers     ProjectMember[]
   tasks              Task[]
+  taskAssignees      TaskAssignee[]
 }
 
 model Organization {
@@ -100,8 +102,40 @@ model Task {
   updatedAt   DateTime   @updatedAt
   dueDate     DateTime?
   activities  Activity[]
+  attachments TaskAttachment[]
   project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignees   TaskAssignee[]
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String
+  uploadedById String
+  name         String
+  mimeType     String?
+  size         Int
+  dataUrl      String
+  createdAt    DateTime @default(now())
+
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([uploadedById])
+}
+
+model TaskAssignee {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  assignedAt DateTime @default(now())
+
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([userId])
 }
 
 model Activity {
@@ -161,7 +195,17 @@ enum ActivityType {
   TASK_CREATED
   TASK_STATUS_CHANGED
   FILE_UPLOADED
+  FILE_REMOVED
   COMMENT_ADDED
+  COMMENT_UPDATED
+  COMMENT_REMOVED
+  OBJECTIVE_ADDED
+  OBJECTIVE_UPDATED
+  OBJECTIVE_REMOVED
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_DELETED
+  TASK_ASSIGNEES_UPDATED
 }
 
 enum MembershipStatus {

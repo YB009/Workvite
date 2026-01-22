@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bell, Settings, Search, LogOut, User, ChevronDown } from "lucide-react";
 import "./Header.css";
 import { useAuthContext } from "../context/AuthContext.jsx";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 
 export default function Header() {
   const { logout, firebaseUser, user, organizations, activeOrganization, setActiveOrganization } = useAuthContext();
@@ -10,6 +10,8 @@ export default function Header() {
   const location = useLocation();
 
   const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchDebounceRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [orgOpen, setOrgOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -52,14 +54,38 @@ export default function Header() {
 
   const handleSearch = (value) => {
     setSearch(value);
-    if (location.pathname === "/dashboard") {
-      navigate(`/dashboard?q=${encodeURIComponent(value)}`);
-    }
   };
 
   const onKeyDown = (e) => {
-    if (e.key === "Enter") handleSearch(e.target.value);
+    if (e.key === "Enter" && location.pathname === "/dashboard") {
+      const next = new URLSearchParams(searchParams);
+      if (search.trim()) {
+        next.set("q", search.trim());
+      } else {
+        next.delete("q");
+      }
+      setSearchParams(next, { replace: true });
+    }
   };
+
+  useEffect(() => {
+    if (location.pathname !== "/dashboard") return;
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      const next = new URLSearchParams(searchParams);
+      if (search.trim()) {
+        next.set("q", search.trim());
+      } else {
+        next.delete("q");
+      }
+      if (next.toString() !== searchParams.toString()) {
+        setSearchParams(next, { replace: true });
+      }
+    }, 300);
+    return () => clearTimeout(searchDebounceRef.current);
+  }, [search, location.pathname, searchParams, setSearchParams]);
 
   const handleBell = () => navigate("/activity");
   const handleSettings = () => navigate("/settings");
@@ -104,6 +130,8 @@ export default function Header() {
       <div className={`header-search ${showMobileSearch ? "header-search--open" : ""}`}>
         <Search size={16} />
         <input
+          id="header-search"
+          name="header-search"
           type="text"
           placeholder="Search anything..."
           value={search}

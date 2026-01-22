@@ -1,6 +1,7 @@
 import prisma from "../../prisma/client.js";
 import { assertRole, Roles } from "../utils/permissions.js";
 import { deleteByPrefix, getCache, setCache } from "../utils/cache.js";
+import { createActivity } from "../services/activityService.js";
 
 export const createProject = async (req, res) => {
   try {
@@ -34,6 +35,16 @@ export const createProject = async (req, res) => {
 
     await deleteByPrefix(`projects:${req.orgId}`);
     await deleteByPrefix(`tasks:${req.orgId}`);
+    try {
+      await createActivity({
+        type: "PROJECT_CREATED",
+        message: "created a project",
+        actorId: req.user.id,
+        projectId: project.id
+      });
+    } catch (activityError) {
+      console.error("Activity log failed:", activityError);
+    }
     res.status(201).json(project);
 
   } catch (error) {
@@ -67,6 +78,16 @@ export const updateProject = async (req, res) => {
     });
 
     await deleteByPrefix(`projects:${req.orgId}`);
+    try {
+      await createActivity({
+        type: "PROJECT_UPDATED",
+        message: "updated a project",
+        actorId: req.user.id,
+        projectId: updated.id
+      });
+    } catch (activityError) {
+      console.error("Activity log failed:", activityError);
+    }
     res.json(updated);
   } catch (error) {
     console.error(error);
@@ -194,5 +215,42 @@ export const revokeProjectAccess = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to revoke access" });
+  }
+};
+
+export const deleteProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    assertRole(req.membership, [Roles.OWNER, Roles.ADMIN]);
+
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, organizationId: req.orgId }
+    });
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    await prisma.project.delete({ where: { id: projectId } });
+
+    await deleteByPrefix(`projects:${req.orgId}`);
+    await deleteByPrefix(`tasks:${req.orgId}`);
+
+    try {
+      await createActivity({
+        type: "PROJECT_DELETED",
+        message: "deleted a project",
+        actorId: req.user.id,
+        projectId: project.id
+      });
+    } catch (activityError) {
+      console.error("Activity log failed:", activityError);
+    }
+
+    res.json({ message: "Project deleted" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to delete project" });
   }
 };

@@ -11,7 +11,7 @@ const normalizeStatus = (status = "") => {
   return "Not Started";
 };
 
-export default function ProjectListView({ tasks = [] }) {
+export default function ProjectListView({ tasks = [], onTaskClick }) {
   const rows = tasks.map((t) => ({
     ...t,
     statusLabel: normalizeStatus(t.status),
@@ -32,7 +32,11 @@ export default function ProjectListView({ tasks = [] }) {
         </thead>
         <tbody>
           {rows.map((t) => (
-            <tr key={t.id} style={{ borderTop: "1px solid #e5e7eb" }}>
+            <tr
+              key={t.id}
+              style={{ borderTop: "1px solid #e5e7eb", cursor: onTaskClick ? "pointer" : "default" }}
+              onClick={() => onTaskClick && onTaskClick(t)}
+            >
               <td style={{ padding: "10px" }}>{t.title}</td>
               <td style={{ padding: "10px" }}>
                 <span

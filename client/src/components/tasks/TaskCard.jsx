@@ -6,12 +6,6 @@ const priorityColors = {
   low: "#10b981",
 };
 
-const statusColors = {
-  "not started": "#e5e7eb",
-  "in progress": "#fbbf24",
-  completed: "#34d399",
-};
-
 const formatDate = (value) => {
   if (!value) return "No date";
   try {
@@ -22,12 +16,17 @@ const formatDate = (value) => {
   }
 };
 
+const initialsFrom = (name = "") => {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+};
+
 export default function TaskCard({ task, onClick }) {
   const priority = (task.priority || "").toLowerCase();
-  const assigneeInitial =
-    task.user?.name?.[0] ||
-    task.user?.email?.[0] ||
-    (task.assignees?.[0]?.[0] ?? "?");
+  const assignees = (task.assignees || []).map((a) => a.user || { id: a.userId });
+  const avatarList = assignees.length ? assignees : [task.user].filter(Boolean);
 
   return (
     <button className="task-card" onClick={onClick} type="button">
@@ -48,12 +47,21 @@ export default function TaskCard({ task, onClick }) {
       {task.description && <div className="task-card__desc">{task.description}</div>}
 
       <div className="task-card__footer">
-        <div className="avatar-chip" title={task.user?.name || task.user?.email || "Assignee"}>
-          {assigneeInitial}
+        <div className="avatar-stack" title="Assignees">
+          {avatarList.slice(0, 3).map((person, idx) => (
+            <div key={person?.id || idx} className="avatar-chip" style={{ marginLeft: idx === 0 ? 0 : -8 }}>
+              {initialsFrom(person?.name || person?.email || "?")}
+            </div>
+          ))}
+          {avatarList.length > 3 && <span className="avatar-more">+{avatarList.length - 3}</span>}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <span className="pill pill--muted" style={{ backgroundColor: "#eef2ff" }}>📌 {task.objectives?.length ?? 0}</span>
-          <span className="pill pill--muted" style={{ backgroundColor: "#fef9c3" }}>📎 {task.attachments?.length ?? 0}</span>
+          <span className="pill pill--muted" style={{ backgroundColor: "#eef2ff" }}>
+            Obj {task.objectives?.length ?? 0}
+          </span>
+          <span className="pill pill--muted" style={{ backgroundColor: "#fef9c3" }}>
+            Files {task.attachments?.length ?? 0}
+          </span>
         </div>
       </div>
     </button>

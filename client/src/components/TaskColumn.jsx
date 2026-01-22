@@ -18,12 +18,13 @@ export default function TaskColumn({ title, tasks = [], onDragStart, onDrop, chi
       }}
     >
       <div className="task-column__header">
-        <h3
-          style={onHeaderClick ? { cursor: "pointer" } : undefined}
-          onClick={onHeaderClick}
-        >
-          {title}
-        </h3>
+        {onHeaderClick ? (
+          <button className="task-column__title-btn" type="button" onClick={onHeaderClick}>
+            {title}
+          </button>
+        ) : (
+          <h3>{title}</h3>
+        )}
         <span className="task-column__count">{tasks.length}</span>
       </div>
       <div className="task-column__stack">
