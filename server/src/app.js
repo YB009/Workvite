@@ -21,9 +21,18 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Trust the proxy (Render load balancer) to ensure secure cookies/sessions work
+app.set("trust proxy", 1);
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(morgan("dev"));
+
+// Fix for Cross-Origin-Opener-Policy error with Firebase Popups
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  next();
+});
 
 const allowedOrigins = [
   process.env.CLIENT_URL || "http://localhost:5173",
