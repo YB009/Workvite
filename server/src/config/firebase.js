@@ -11,7 +11,7 @@ if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
-      console.log("[Firebase] Admin SDK initialized successfully");
+      console.log(`[Firebase] Admin SDK initialized successfully for project: ${serviceAccount.project_id}`);
     } else {
       console.warn("[Firebase] Warning: FIREBASE_SERVICE_ACCOUNT not found in environment.");
     }

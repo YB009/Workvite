@@ -35,13 +35,14 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(morgan("dev"));
 
 // Fix for Cross-Origin-Opener-Policy error with Firebase Popups
+// Changed to 'unsafe-none' to resolve window.closed blocking issues
 app.use((req, res, next) => {
-  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  res.setHeader("Cross-Origin-Opener-Policy", "unsafe-none");
   next();
 });
 
 const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim())
+  ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim().replace(/\/$/, ""))
   : [
       process.env.CLIENT_URL || "http://localhost:5173",
       "http://localhost:5173",
