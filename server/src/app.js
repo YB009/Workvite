@@ -6,6 +6,7 @@ import session from "express-session";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import "./config/firebase.js"; // Initialize Firebase Admin SDK
 import authRoutes from "./routes/authRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
@@ -23,6 +24,11 @@ const app = express();
 
 // Trust the proxy (Render load balancer) to ensure secure cookies/sessions work
 app.set("trust proxy", 1);
+
+// Debug: Check if Service Account is loaded (do not log the actual key)
+if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+  console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT environment variable is missing!");
+}
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
