@@ -14,8 +14,8 @@ export const verifyAuth = async (req, res, next) => {
     // Verify Firebase token
     const decoded = await admin.auth().verifyIdToken(idToken);
 
-    // Load user from DB
-    const user = await prisma.user.findUnique({
+    // Load user from DB (findFirst because firebaseUid may not be marked unique in older clients)
+    const user = await prisma.user.findFirst({
       where: { firebaseUid: decoded.uid }
     });
 

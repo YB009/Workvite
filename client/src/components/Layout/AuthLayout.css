@@ -1,0 +1,127 @@
+.auth-shell {
+  min-height: 100vh;
+  background: #f7fafc;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  border: 1px solid #eef1f7;
+}
+
+.auth-card__header h1 {
+  margin: 0;
+  color: #111827;
+}
+
+.auth-sub {
+  margin: 4px 0 16px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-footnote {
+  margin-top: 12px;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+}
+
+.auth-footnote a {
+  color: #4338ca;
+  font-weight: 700;
+}
+
+.input-field {
+  display: grid;
+  gap: 6px;
+}
+
+.input-field label {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.input-field input {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: #4338ca;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(67, 56, 202, 0.25);
+}
+
+.btn-ghost {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.social-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.social-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.social-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-icon img {
+  width: 18px;
+  height: 18px;
+}
+
+.error-text {
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 13px;
+}

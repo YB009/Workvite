@@ -1,0 +1,37 @@
+.empty-state {
+  border: 1px dashed #d8dde8;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b7280;
+}
+
+.empty-state--compact {
+  padding: 10px;
+}
+
+.empty-state__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #4338ca;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.empty-state__title {
+  margin: 0;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.empty-state__desc {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}

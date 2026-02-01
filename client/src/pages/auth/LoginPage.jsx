@@ -1,159 +1,143 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { signInWithRedirect, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { Link, useNavigate } from "react-router-dom";
+import AuthLayout from "../../components/Layout/AuthLayout.jsx";
 import {
   auth,
   googleProvider,
-  facebookProvider,
   githubProvider,
+  facebookProvider,
   twitterProvider,
 } from "../../api/firebase";
-import {
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-} from "firebase/auth";
+import { useAuthContext } from "../../context/AuthContext.jsx";
+
+const socialIcons = {
+  google: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg",
+  github: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg",
+  facebook: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/facebook/facebook-original.svg",
+  twitter: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/twitter/twitter-original.svg",
+};
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const { firebaseUser } = useAuthContext();
+  const pendingOAuthRef = useRef(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const redirectFlag = "ttm_oauth_redirect";
 
-  const loginEmail = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      if (mode === "signup") {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-    } catch (err) {
-      setError(err.message);
+  useEffect(() => {
+    if (firebaseUser && sessionStorage.getItem(redirectFlag)) {
+      sessionStorage.removeItem(redirectFlag);
+      navigate("/oauth/success", { replace: true });
+      return;
     }
+    if (firebaseUser && !pendingOAuthRef.current) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [firebaseUser, navigate]);
 
-    setLoading(false);
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    try {
+      setLoading(true);
+      pendingOAuthRef.current = true;
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate("/oauth/success");
+    } catch (err) {
+      pendingOAuthRef.current = false;
+      setError(err.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const popupLogin = async (provider) => {
-    setLoading(true);
+  const handleSocial = async (provider) => {
     setError("");
-
     try {
-      await signInWithPopup(auth, provider);
+      setLoading(true);
+      pendingOAuthRef.current = true;
+      const isLocalhost = window.location.hostname === "localhost";
+      if (isLocalhost) {
+        await signInWithPopup(auth, provider);
+        navigate("/oauth/success");
+      } else {
+        sessionStorage.setItem(redirectFlag, "1");
+        await signInWithRedirect(auth, provider);
+      }
     } catch (err) {
-      setError(err.message);
+      if (err?.code === "auth/popup-blocked" || err?.code === "auth/popup-closed-by-user") {
+        try {
+          sessionStorage.setItem(redirectFlag, "1");
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectErr) {
+          pendingOAuthRef.current = false;
+          sessionStorage.removeItem(redirectFlag);
+          setError(redirectErr.message || "Social login failed");
+          return;
+        }
+      }
+      pendingOAuthRef.current = false;
+      sessionStorage.removeItem(redirectFlag);
+      setError(err.message || "Social login failed");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 text-gray-900">
-      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md animate-fadeIn">
-        <h1 className="text-3xl font-semibold text-center mb-6 text-gray-900">
-          Team Task Manager Login
-        </h1>
-
-        {error && (
-          <div className="bg-red-100 text-red-600 px-3 py-2 rounded mb-4 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Email Login */}
-        <form onSubmit={loginEmail} className="space-y-4 text-left">
-          <label className="block text-sm font-medium text-gray-700">
-            Email
-            <input
-              type="email"
-              placeholder="you@example.com"
-              autoComplete="email"
-              required
-              className="mt-1 w-full border rounded px-3 py-2 focus:ring focus:border-blue-400 bg-white text-gray-900 placeholder-gray-400"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </label>
-
-          <label className="block text-sm font-medium text-gray-700">
-            Password
-            <input
-              type="password"
-              placeholder="••••••••"
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              required
-              minLength={6}
-              className="mt-1 w-full border rounded px-3 py-2 focus:ring focus:border-blue-400 bg-white text-gray-900 placeholder-gray-400"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition"
-          >
-            {loading
-              ? "Loading..."
-              : mode === "signup"
-              ? "Create account"
-              : "Login"}
+    <AuthLayout title="Welcome back">
+      <form className="auth-actions" onSubmit={handleEmailLogin}>
+        {error && <div className="error-text">{error}</div>}
+        <div className="input-field">
+          <label>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            required
+          />
+        </div>
+        <div className="input-field">
+          <label>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        <button type="submit" className="btn-primary" disabled={loading}>
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
+        <div className="social-grid">
+          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(googleProvider)}>
+            <span className="social-icon"><img src={socialIcons.google} alt="Google" /></span>
+            <span>Continue with Google</span>
           </button>
-        </form>
-
-        <div className="text-center text-sm text-gray-600 mt-3">
-          {mode === "signup" ? "Already have an account?" : "New here?"}{" "}
-          <button
-            type="button"
-            className="text-blue-600 hover:underline font-medium"
-            onClick={() => setMode(mode === "signup" ? "login" : "signup")}
-            disabled={loading}
-          >
-            {mode === "signup" ? "Switch to login" : "Create an account"}
+          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(githubProvider)}>
+            <span className="social-icon"><img src={socialIcons.github} alt="GitHub" /></span>
+            <span>Continue with GitHub</span>
+          </button>
+          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(facebookProvider)}>
+            <span className="social-icon"><img src={socialIcons.facebook} alt="Facebook" /></span>
+            <span>Continue with Facebook</span>
+          </button>
+          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(twitterProvider)}>
+            <span className="social-icon"><img src={socialIcons.twitter} alt="Twitter" /></span>
+            <span>Continue with Twitter</span>
           </button>
         </div>
-
-        <div className="text-center text-gray-500 my-4">or</div>
-
-        {/* OAuth Buttons */}
-        <div className="space-y-3">
-          <button
-            onClick={() => popupLogin(googleProvider)}
-            className="w-full bg-white border shadow-sm hover:bg-gray-50 py-2 rounded flex items-center justify-center gap-2 transition"
-          >
-            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" className="w-5 h-5" />
-            Sign in with Google
-          </button>
-
-          <button
-            onClick={() => popupLogin(facebookProvider)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded flex items-center justify-center gap-2 transition"
-          >
-            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/facebook/facebook-original.svg" className="w-5 h-5" />
-            Continue with Facebook
-          </button>
-
-          <button
-            onClick={() => popupLogin(githubProvider)}
-            className="w-full bg-black hover:bg-gray-800 text-white py-2 rounded flex items-center justify-center gap-2 transition"
-          >
-            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" className="w-5 h-5" />
-            Login with GitHub
-          </button>
-
-          <button
-            onClick={() => popupLogin(twitterProvider)}
-            className="w-full bg-sky-500 hover:bg-sky-600 text-white py-2 rounded flex items-center justify-center gap-2 transition"
-          >
-            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/twitter/twitter-original.svg" className="w-5 h-5" />
-            Sign in with Twitter (X)
-          </button>
+        <div className="auth-footnote">
+          New here? <Link to="/register">Create an account</Link>
         </div>
-      </div>
-    </div>
+      </form>
+    </AuthLayout>
   );
 }

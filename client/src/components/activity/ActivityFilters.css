@@ -1,0 +1,25 @@
+.activity-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.activity-filters__field {
+  display: grid;
+  gap: 6px;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.activity-filters__field select {
+  min-width: 160px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  color: #111827;
+}

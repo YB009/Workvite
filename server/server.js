@@ -73,13 +73,6 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Server is running" });
 });
 
-// SPA fallback to client build
-if (fs.existsSync(clientDist)) {
-  app.get(/(.*)/, (req, res) => {
-    res.sendFile(path.join(clientDist, "index.html"));
-  });
-}
-
 app.listen(port, () => {
   console.log("API server running on port " + port);
 });

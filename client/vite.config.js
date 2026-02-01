@@ -5,8 +5,12 @@ export default defineConfig({
   root: ".",                 // IMPORTANT
   plugins: [react()],
   server: {
-    port: 5173,
-    strictPort: true,
+    port: 4173,
+    strictPort: false,
+    headers: {
+      "Cross-Origin-Opener-Policy": "unsafe-none",
+      "Cross-Origin-Embedder-Policy": "unsafe-none"
+    }
   },
   build: {
     outDir: "dist",

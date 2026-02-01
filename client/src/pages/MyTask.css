@@ -1,0 +1,128 @@
+.task-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-table__head,
+.task-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1.2fr;
+  align-items: center;
+  padding: 10px 12px;
+  column-gap: 12px;
+}
+
+.task-table__head {
+  background: #f8fafc;
+  border-radius: 12px;
+  color: #6b7280;
+  font-weight: 700;
+  border: 1px solid #eef1f7;
+}
+
+.task-row {
+  background: #fff;
+  border: 1px solid #eef1f7;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.05);
+}
+
+.task-row--overdue {
+  border-color: #fca5a5;
+  background: #fff1f2;
+  box-shadow: 0 10px 26px rgba(239, 68, 68, 0.16);
+}
+
+.task-table--all .task-table__head,
+.task-row--all {
+  grid-template-columns: 2fr 1fr 1fr 1fr 1.4fr 1.2fr;
+}
+
+.task-row--all {
+  gap: 12px;
+}
+
+.task-table--all .task-table__head span {
+  justify-content: flex-start;
+}
+
+.task-title {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.task-row span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cell-center {
+  justify-content: center;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.priority-high,
+.priority-hard {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.priority-medium {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.priority-low,
+.priority-easy {
+  background: #dcfce7;
+  color: #22c55e;
+}
+
+.status-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-neutral {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.assignee-stack {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.assignee-pill {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #312e81;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 12px;
+}

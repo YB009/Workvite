@@ -3,7 +3,7 @@ import prisma from "../../prisma/client.js";
 // Ensure the user belongs to the org and cache membership on the request
 export const requireOrgAccess = async (req, res, next) => {
   try {
-    const orgId = req.params.orgId || req.body.orgId;
+    const orgId = req.params?.orgId || req.body?.orgId || req.query?.orgId;
 
     if (!orgId) {
       return res.status(400).json({ message: "Organization ID required" });
