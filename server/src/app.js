@@ -1,6 +1,7 @@
 // server/src/app.js
 import express from "express";
 import morgan from "morgan";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
@@ -36,7 +37,12 @@ app.use(express.static(path.join(__dirname, "../../client/dist")));
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
 app.get(/(.*)/, (req, res) => {
-  res.sendFile(path.join(__dirname, "../../client/dist/index.html"));
+  const indexPath = path.join(__dirname, "../../client/dist/index.html");
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send("Client build not found. Please check your Render Build Command.");
+  }
 });
 
 export default app;
