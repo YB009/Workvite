@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { signInWithRedirect, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { signInWithRedirect, signInWithEmailAndPassword, signInWithPopup, getRedirectResult } from "firebase/auth";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../../components/Layout/AuthLayout.jsx";
 import {
@@ -27,6 +27,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const redirectFlag = "ttm_oauth_redirect";
+
+  useEffect(() => {
+    getRedirectResult(auth).catch((err) => {
+      console.error("Redirect login error:", err);
+      setError(err.message || "Login failed");
+      sessionStorage.removeItem(redirectFlag);
+    });
+  }, []);
 
   useEffect(() => {
     if (firebaseUser && sessionStorage.getItem(redirectFlag)) {
@@ -134,10 +142,4 @@ export default function LoginPage() {
             <span>Continue with Twitter</span>
           </button>
         </div>
-        <div className="auth-footnote">
-          New here? <Link to="/register">Create an account</Link>
-        </div>
-      </form>
-    </AuthLayout>
-  );
-}
+        <div className="

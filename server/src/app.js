@@ -12,6 +12,9 @@ import taskRoutes from "./routes/taskRoutes.js";
 import orgRoutes from "./routes/orgRoutes.js";
 import activityRoutes from "./routes/activityRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
+import billingRoutes from "./routes/billingRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,6 +52,9 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/orgs", orgRoutes);
 app.use("/api/activity", activityRoutes);
 app.use("/api/team", teamRoutes);
+app.use("/api/billing", billingRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/users", userRoutes);
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
