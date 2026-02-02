@@ -1035,6 +1035,7 @@
   position: absolute;
   inset: 0;
   opacity: 1;
+  pointer-events: none;
 }
 
 .ballpit-wash {
