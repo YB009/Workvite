@@ -20,11 +20,11 @@ const socialIcons = {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { firebaseUser } = useAuthContext();
+  const { firebaseUser, token, loading } = useAuthContext();
   const pendingOAuthRef = useRef(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const redirectFlag = "ttm_oauth_redirect";
 
@@ -37,21 +37,23 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
+    if (loading) return;
+
     if (firebaseUser && sessionStorage.getItem(redirectFlag)) {
       sessionStorage.removeItem(redirectFlag);
       navigate("/oauth/success", { replace: true });
       return;
     }
-    if (firebaseUser && !pendingOAuthRef.current) {
+    if (firebaseUser && token && !pendingOAuthRef.current) {
       navigate("/dashboard", { replace: true });
     }
-  }, [firebaseUser, navigate]);
+  }, [firebaseUser, token, loading, navigate]);
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setError("");
     try {
-      setLoading(true);
+      setIsSubmitting(true);
       pendingOAuthRef.current = true;
       await signInWithEmailAndPassword(auth, email, password);
       navigate("/oauth/success");
@@ -59,14 +61,14 @@ export default function LoginPage() {
       pendingOAuthRef.current = false;
       setError(err.message || "Login failed");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleSocial = async (provider) => {
     setError("");
     try {
-      setLoading(true);
+      setIsSubmitting(true);
       pendingOAuthRef.current = true;
 
       // Detect mobile to prefer redirect (fixes Safari popup issues)
@@ -97,7 +99,7 @@ export default function LoginPage() {
       sessionStorage.removeItem(redirectFlag);
       setError(err.message || "Social login failed");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -125,23 +127,23 @@ export default function LoginPage() {
             required
           />
         </div>
-        <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? "Signing in..." : "Sign in"}
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? "Signing in..." : "Sign in"}
         </button>
         <div className="social-grid">
-          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(googleProvider)}>
+          <button type="button" className="btn-ghost social-btn" disabled={isSubmitting} onClick={() => handleSocial(googleProvider)}>
             <span className="social-icon"><img src={socialIcons.google} alt="Google" /></span>
             <span>Continue with Google</span>
           </button>
-          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(githubProvider)}>
+          <button type="button" className="btn-ghost social-btn" disabled={isSubmitting} onClick={() => handleSocial(githubProvider)}>
             <span className="social-icon"><img src={socialIcons.github} alt="GitHub" /></span>
             <span>Continue with GitHub</span>
           </button>
-          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(facebookProvider)}>
+          <button type="button" className="btn-ghost social-btn" disabled={isSubmitting} onClick={() => handleSocial(facebookProvider)}>
             <span className="social-icon"><img src={socialIcons.facebook} alt="Facebook" /></span>
             <span>Continue with Facebook</span>
           </button>
-          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(twitterProvider)}>
+          <button type="button" className="btn-ghost social-btn" disabled={isSubmitting} onClick={() => handleSocial(twitterProvider)}>
             <span className="social-icon"><img src={socialIcons.twitter} alt="Twitter" /></span>
             <span>Continue with Twitter</span>
           </button>

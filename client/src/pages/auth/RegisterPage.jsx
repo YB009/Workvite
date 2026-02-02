@@ -13,11 +13,11 @@ import { signInWithRedirect, createUserWithEmailAndPassword, signInWithPopup, ge
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { firebaseUser } = useAuthContext();
+  const { firebaseUser, token, loading } = useAuthContext();
   const pendingOAuthRef = useRef(false);
   const redirectFlag = "ttm_oauth_redirect";
   const [form, setForm] = useState({ email: "", password: "", confirm: "" });
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const socialIcons = {
@@ -36,15 +36,17 @@ export default function RegisterPage() {
   }, []);
 
   useEffect(() => {
+    if (loading) return;
+
     if (firebaseUser) {
       if (sessionStorage.getItem(redirectFlag)) {
         sessionStorage.removeItem(redirectFlag);
         navigate("/oauth/success");
-      } else if (!pendingOAuthRef.current) {
+      } else if (token && !pendingOAuthRef.current) {
         navigate("/dashboard");
       }
     }
-  }, [firebaseUser, navigate]);
+  }, [firebaseUser, token, loading, navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -58,7 +60,7 @@ export default function RegisterPage() {
       return;
     }
     try {
-      setLoading(true);
+      setIsSubmitting(true);
       pendingOAuthRef.current = true;
       await createUserWithEmailAndPassword(auth, form.email, form.password);
       navigate("/oauth/success");
@@ -66,14 +68,14 @@ export default function RegisterPage() {
       pendingOAuthRef.current = false;
       setError(err.message || "Registration failed");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleSocial = async (provider) => {
     setError("");
     try {
-      setLoading(true);
+      setIsSubmitting(true);
       pendingOAuthRef.current = true;
 
       // Detect mobile to prefer redirect (fixes Safari popup issues)
@@ -104,7 +106,7 @@ export default function RegisterPage() {
       sessionStorage.removeItem(redirectFlag);
       setError(err.message || "Social signup failed");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -124,23 +126,23 @@ export default function RegisterPage() {
           <label>Confirm password</label>
           <input name="confirm" type="password" placeholder="••••••••" value={form.confirm} onChange={handleChange} required />
         </div>
-        <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? "Creating..." : "Create account"}
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? "Creating..." : "Create account"}
         </button>
         <div className="social-grid">
-          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(googleProvider)}>
+          <button type="button" className="btn-ghost social-btn" disabled={isSubmitting} onClick={() => handleSocial(googleProvider)}>
             <span className="social-icon"><img src={socialIcons.google} alt="Google" /></span>
             <span>Continue with Google</span>
           </button>
-          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(githubProvider)}>
+          <button type="button" className="btn-ghost social-btn" disabled={isSubmitting} onClick={() => handleSocial(githubProvider)}>
             <span className="social-icon"><img src={socialIcons.github} alt="GitHub" /></span>
             <span>Continue with GitHub</span>
           </button>
-          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(facebookProvider)}>
+          <button type="button" className="btn-ghost social-btn" disabled={isSubmitting} onClick={() => handleSocial(facebookProvider)}>
             <span className="social-icon"><img src={socialIcons.facebook} alt="Facebook" /></span>
             <span>Continue with Facebook</span>
           </button>
-          <button type="button" className="btn-ghost social-btn" disabled={loading} onClick={() => handleSocial(twitterProvider)}>
+          <button type="button" className="btn-ghost social-btn" disabled={isSubmitting} onClick={() => handleSocial(twitterProvider)}>
             <span className="social-icon"><img src={socialIcons.twitter} alt="Twitter" /></span>
             <span>Continue with Twitter</span>
           </button>
