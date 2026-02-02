@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 import { LenisProvider } from "../context/LenisContext";
 
 export default function SmoothScroll({ children }) {
   const lenisRef = useRef(null);
-  const [lenisInstance, setLenisInstance] = useState(null);
+  const frameIdRef = useRef(null);
 
-  useEffect(() => {
+  const initLenis = useCallback(() => {
+    if (lenisRef.current) return lenisRef.current;
+
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -20,25 +22,37 @@ export default function SmoothScroll({ children }) {
     });
 
     lenisRef.current = lenis;
-    setLenisInstance(lenis);
+    return lenis;
+  }, []);
 
-    let animationFrameId;
+  useEffect(() => {
+    const lenis = initLenis();
 
     function raf(time) {
       lenis.raf(time);
-      animationFrameId = requestAnimationFrame(raf);
+      frameIdRef.current = requestAnimationFrame(raf);
     }
 
-    animationFrameId = requestAnimationFrame(raf);
+    frameIdRef.current = requestAnimationFrame(raf);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
-      lenis.destroy();
+      if (frameIdRef.current) {
+        cancelAnimationFrame(frameIdRef.current);
+      }
+      if (lenisRef.current) {
+        lenisRef.current.destroy();
+        lenisRef.current = null;
+      }
     };
-  }, []);
+  }, [initLenis]);
+
+  // Initialize lenis instance eagerly for context
+  if (!lenisRef.current) {
+    initLenis();
+  }
 
   return (
-    <LenisProvider lenis={lenisInstance}>
+    <LenisProvider lenis={lenisRef.current}>
       {children}
     </LenisProvider>
   );

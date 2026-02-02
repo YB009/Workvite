@@ -339,6 +339,7 @@
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
   display: grid;
   gap: 12px;
+  position: relative;
 }
 
 .task-meta-card {
@@ -1152,4 +1153,10 @@
 .drawer.drawer--panel.task-drawer {
   z-index: 9999 !important;
   overflow-y: auto !important;
+}
+
+body.drawer-open {
+  overflow: hidden !important;
+  position: fixed;
+  width: 100%;
 }
