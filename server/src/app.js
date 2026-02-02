@@ -65,6 +65,8 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production", // Secure in production
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 'none' required for cross-site (Render)
+      httpOnly: true,
+      path: "/",
     },
   })
 );

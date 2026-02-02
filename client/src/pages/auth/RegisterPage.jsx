@@ -75,6 +75,15 @@ export default function RegisterPage() {
     try {
       setLoading(true);
       pendingOAuthRef.current = true;
+
+      // Detect mobile to prefer redirect (fixes Safari popup issues)
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        sessionStorage.setItem(redirectFlag, "1");
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+
       // Use popup for all environments to avoid browser redirect/state-loss issues
       await signInWithPopup(auth, provider);
       navigate("/oauth/success");

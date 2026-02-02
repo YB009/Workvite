@@ -6,6 +6,9 @@ import { loginWithFirebase } from "../api/authApi";
 import { acceptTeamInvite } from "../api/teamApi";
 import axios from "../api/axiosInstance";
 
+// Fix for Safari/Mobile: Ensure cookies are sent with requests
+axios.defaults.withCredentials = true;
+
 const INVITE_STORAGE_KEY = "ttm_invite_token";
 const ACTIVE_ORG_STORAGE_KEY = "ttm_active_org";
 
