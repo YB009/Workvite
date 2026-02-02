@@ -115,16 +115,16 @@ export default function RegisterPage() {
       <form className="auth-actions" onSubmit={handleSubmit}>
         {error && <div className="error-text">{error}</div>}
         <div className="input-field">
-          <label>Email</label>
-          <input name="email" type="email" placeholder="you@example.com" value={form.email} onChange={handleChange} required />
+          <label htmlFor="email">Email</label>
+          <input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" value={form.email} onChange={handleChange} required />
         </div>
         <div className="input-field">
-          <label>Password</label>
-          <input name="password" type="password" placeholder="••••••••" value={form.password} onChange={handleChange} required />
+          <label htmlFor="password">Password</label>
+          <input id="password" name="password" type="password" autoComplete="new-password" placeholder="••••••••" value={form.password} onChange={handleChange} required />
         </div>
         <div className="input-field">
-          <label>Confirm password</label>
-          <input name="confirm" type="password" placeholder="••••••••" value={form.confirm} onChange={handleChange} required />
+          <label htmlFor="confirm">Confirm password</label>
+          <input id="confirm" name="confirm" type="password" autoComplete="new-password" placeholder="••••••••" value={form.confirm} onChange={handleChange} required />
         </div>
         <button type="submit" className="btn-primary" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create account"}

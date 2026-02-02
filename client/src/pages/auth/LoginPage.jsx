@@ -108,9 +108,12 @@ export default function LoginPage() {
       <form className="auth-actions" onSubmit={handleEmailLogin}>
         {error && <div className="error-text">{error}</div>}
         <div className="input-field">
-          <label>Email</label>
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
+            name="email"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
@@ -118,9 +121,12 @@ export default function LoginPage() {
           />
         </div>
         <div className="input-field">
-          <label>Password</label>
+          <label htmlFor="password">Password</label>
           <input
+            id="password"
+            name="password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
