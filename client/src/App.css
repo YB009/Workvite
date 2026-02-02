@@ -252,8 +252,14 @@
   backdrop-filter: blur(10px);
   box-shadow: -18px 0 40px rgba(15, 23, 42, 0.18);
   padding: 18px 16px;
-  overflow-y: auto;
+  overflow-y: scroll;
 }
+
+.task-drawer {
+  z-index: 50 !important;
+  overflow-y: scroll !important;
+}
+
 
 .drawer__header {
   display: flex;

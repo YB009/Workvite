@@ -4,6 +4,7 @@ import morgan from "morgan";
 import cors from "cors";
 import session from "express-session";
 import fs from "fs";
+import process from 'process';
 import path from "path";
 import { fileURLToPath } from "url";
 import "./config/firebase.js"; // Initialize Firebase Admin SDK
@@ -38,7 +39,7 @@ app.use(morgan("dev"));
 // Fix for Cross-Origin-Opener-Policy error with Firebase Popups
 // Changed to 'unsafe-none' to resolve window.closed blocking issues
 app.use((req, res, next) => {
-  res.setHeader("Cross-Origin-Opener-Policy", "unsafe-none");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   next();
 });
 
@@ -64,7 +65,7 @@ app.use(
     proxy: true, // Ensure proxy is trusted for secure cookies
     cookie: {
       secure: process.env.NODE_ENV === "production", // Secure in production
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 'none' required for cross-site (Render)
+      sameSite: "lax", // 'none' required for cross-site (Render)
       httpOnly: true,
       path: "/",
     },
