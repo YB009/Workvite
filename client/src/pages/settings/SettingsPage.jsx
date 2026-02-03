@@ -215,22 +215,14 @@ export default function SettingsPage({ profileUserId, readOnly = false, invitePr
 
   return (
     <div className={`page-stack settings-page ${editing ? "settings-page--editing" : ""}`}>
-      {showDrawerBack && (
-        <div className="profile-backbar">
-          <button className="btn-ghost profile-backbar-btn" onClick={handleBack}>
-            Back
-          </button>
-          <span className="profile-backbar-title">Profile</span>
-        </div>
-      )}
+        {showDrawerBack && (
+          <div className="profile-backbar">
+            <span className="profile-backbar-title">Profile</span>
+          </div>
+        )}
       <div className="settings-header">
         <div>
-          {!isSelf && (
-            <button className="btn-ghost profile-back" onClick={handleBack}>
-              Back
-            </button>
-          )}
-          <h1>{isSelf ? "My Profile" : "Profile"}</h1>
+            <h1>{isSelf ? "My Profile" : "Profile"}</h1>
           <p className="muted">
             {isSelf ? "Your workspace identity and contribution summary." : "Workspace profile overview."}
           </p>

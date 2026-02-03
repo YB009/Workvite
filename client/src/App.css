@@ -1039,6 +1039,12 @@
   pointer-events: none;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .ballpit-canvas {
+    pointer-events: auto;
+  }
+}
+
 .ballpit-wash {
   position: absolute;
   inset: 0;
@@ -1167,6 +1173,24 @@
   .drawer,
   .drawer-panel {
     height: 100dvh;
+  }
+}
+
+@media (max-width: 720px) {
+  .drawer,
+  .drawer-panel,
+  .drawer.drawer--panel.task-drawer {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+  @supports (height: 100dvh) {
+    .drawer,
+    .drawer-panel,
+    .drawer.drawer--panel.task-drawer {
+      height: 100dvh;
+    }
   }
 }
 

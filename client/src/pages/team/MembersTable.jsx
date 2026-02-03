@@ -61,7 +61,7 @@ export default function MembersTable({
           if (currentRole === "ADMIN" && member.role === "OWNER") return false;
           return true;
         })();
-        const canManageProjects = canManage && !isSelf && !isInvite;
+        const canManageProjects = canManage && !isSelf && !isInvite && !(currentRole === "ADMIN" && isOwner);
 
         return (
           <div className="team-table__row" key={member.id}>

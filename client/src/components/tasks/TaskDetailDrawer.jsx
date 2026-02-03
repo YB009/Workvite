@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuthContext } from "../../context/AuthContext.jsx";
 import { useLenis } from "../../context/LenisContext";
 import { logActivity } from "../../api/activityApi.js";
@@ -217,7 +218,7 @@ export default function TaskDetailDrawer({
     (task.assignees || []).map((a) => a.userId).filter(Boolean)
   );
 
-  return (
+  const content = (
     <div className="drawer drawer--panel task-drawer" data-lenis-prevent>
       <div className="drawer__header task-drawer-header" style={{ justifyContent: "space-between", gap: 12 }}>
         <div className="task-drawer-header__left">
@@ -539,6 +540,9 @@ export default function TaskDetailDrawer({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return content;
+  return createPortal(content, document.body);
 }
 
 const ObjectiveInput = ({ onAdd }) => {

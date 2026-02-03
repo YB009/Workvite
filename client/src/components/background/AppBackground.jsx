@@ -15,12 +15,25 @@ const shouldDisable = (pathname) => EXCLUDED_PATHS.some((path) => pathname.start
 export default function AppBackground() {
   const location = useLocation();
   const [count, setCount] = useState(120);
+  const [interactive, setInteractive] = useState(false);
 
   useEffect(() => {
     const updateCount = () => setCount(window.innerWidth < 768 ? 70 : 120);
     updateCount();
     window.addEventListener("resize", updateCount);
     return () => window.removeEventListener("resize", updateCount);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updateInteractive = () => setInteractive(media.matches);
+    updateInteractive();
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", updateInteractive);
+      return () => media.removeEventListener("change", updateInteractive);
+    }
+    media.addListener(updateInteractive);
+    return () => media.removeListener(updateInteractive);
   }, []);
 
   if (shouldDisable(location.pathname)) return null;
@@ -34,7 +47,7 @@ export default function AppBackground() {
           gravity={0.01}
           friction={0.9975}
           wallBounce={0.95}
-          followCursor={false}
+          followCursor={interactive}
           colors={["#ffffff", "#000000", "#3532b8"]}
           ambientIntensity={2.2}
           lightIntensity={700}

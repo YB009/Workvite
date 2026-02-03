@@ -1,11 +1,10 @@
 import "./App.css";
-import { useEffect } from "react";
 import LoginPage from "./pages/auth/LoginPage.jsx";
 import RegisterPage from "./pages/auth/RegisterPage.jsx";
 import OAuthSuccessPage from "./pages/auth/OAuthSuccessPage.jsx";
 import AcceptInvitePage from "./pages/invite/AcceptInvitePage.jsx";
 import { useAuthContext } from "./context/AuthContext.jsx";
-import { Routes, Route, Navigate, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
 import AppLayout from "./components/Layout/AppLayout.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import DashboardAnimated from "./pages/Dashboard-animated.jsx";
@@ -31,17 +30,7 @@ import AppBackground from "./components/background/AppBackground.jsx";
 function App() {
   const { firebaseUser, loading, hasOrganization, bootstrapped } = useAuthContext();
   const location = useLocation();
-  const navigate = useNavigate();
   const { profileState, closeProfile } = useProfile();
-  const successFlag = "ttm_oauth_success";
-
-  useEffect(() => {
-    if (!firebaseUser) return;
-    if (location.pathname === "/oauth/success") return;
-    if (sessionStorage.getItem(successFlag)) {
-      navigate("/oauth/success", { replace: true });
-    }
-  }, [firebaseUser, location.pathname, navigate]);
 
   const ProtectedRoute = () => {
     if (loading || !bootstrapped) {

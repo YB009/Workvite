@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 export default function CreateTaskDrawer({
   open,
@@ -48,7 +49,7 @@ export default function CreateTaskDrawer({
 
   if (!open) return null;
 
-  return (
+  const content = (
     <div className="drawer">
       <div className="drawer__header">
         <h3>Create Task</h3>
@@ -158,4 +159,7 @@ export default function CreateTaskDrawer({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return content;
+  return createPortal(content, document.body);
 }
