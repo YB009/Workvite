@@ -30,6 +30,9 @@ export default function LoginPage() {
     const ua = navigator.userAgent || "";
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
   })();
+  const isInAppBrowser = /FBAN|FBAV|Instagram|Snapchat/i.test(
+    navigator.userAgent || ""
+  );
   const isDesktop = !isMobile;
 
   useEffect(() => {
