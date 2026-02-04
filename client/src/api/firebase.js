@@ -8,6 +8,8 @@ import {
   TwitterAuthProvider,
   setPersistence,
   indexedDBLocalPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
 } from "firebase/auth";
 
 /**
@@ -35,9 +37,25 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 
-// Ensure auth state persists across iOS redirects (Chrome/Safari use WKWebView).
-setPersistence(auth, indexedDBLocalPersistence).catch((err) => {
+const isIOS = (() => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const isIOSDevice = /iPad|iPhone|iPod/i.test(ua);
+  const isIPadOS = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  return isIOSDevice || isIPadOS;
+})();
+
+const preferredPersistence = isIOS ? browserLocalPersistence : indexedDBLocalPersistence;
+
+// Ensure auth state persists across redirects (iOS Safari can fail with IndexedDB).
+setPersistence(auth, preferredPersistence).catch(async (err) => {
   console.warn("Auth persistence setup failed:", err);
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (fallbackErr) {
+    console.warn("Auth local persistence failed:", fallbackErr);
+    await setPersistence(auth, browserSessionPersistence);
+  }
 });
 
 // Providers

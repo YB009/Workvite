@@ -33,6 +33,13 @@ export default function LoginPage() {
   const isInAppBrowser = /FBAN|FBAV|Instagram|Snapchat/i.test(
     navigator.userAgent || ""
   );
+  const prefersPopup = (() => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isSafari = /Safari/i.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua);
+    return isIOS && isSafari;
+  })();
   const isDesktop = !isMobile;
 
   useEffect(() => {
@@ -83,6 +90,11 @@ export default function LoginPage() {
       sessionStorage.setItem(successFlag, "1");
       localStorage.setItem(successFlag, "1");
 
+      if (prefersPopup) {
+        await signInWithPopup(auth, provider);
+        navigate("/oauth/success");
+        return;
+      }
       if (isDesktop) {
         await signInWithPopup(auth, provider);
         navigate("/oauth/success");

@@ -1,7 +1,7 @@
 // client/src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { auth } from "../api/firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 import { loginWithFirebase } from "../api/authApi";
 import { acceptTeamInvite } from "../api/teamApi";
 import axios from "../api/axiosInstance";
@@ -74,6 +74,11 @@ export const AuthProvider = ({ children }) => {
 
   // Watch Firebase auth state
   useEffect(() => {
+    // Always resolve any pending redirect result so auth state updates on any route.
+    getRedirectResult(auth).catch(() => {
+      // ignore; auth state listener will handle steady-state
+    });
+
     const unsub = onAuthStateChanged(auth, async (user) => {
       setBootstrapped(false);
       if (!user) {
