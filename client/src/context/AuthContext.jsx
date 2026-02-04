@@ -11,6 +11,7 @@ axios.defaults.withCredentials = true;
 
 const INVITE_STORAGE_KEY = "ttm_invite_token";
 const ACTIVE_ORG_STORAGE_KEY = "ttm_active_org";
+const AVATAR_STORAGE_KEY = "ttm_avatar_url";
 
 const AuthContext = createContext(null);
 
@@ -22,6 +23,9 @@ export const AuthProvider = ({ children }) => {
   const [organizations, setOrganizations] = useState([]);
   const [hasOrganization, setHasOrganization] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(
+    () => localStorage.getItem(AVATAR_STORAGE_KEY) || ""
+  );
   const [activeOrgId, setActiveOrgId] = useState(
     () => localStorage.getItem(ACTIVE_ORG_STORAGE_KEY) || ""
   );
@@ -55,6 +59,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const setProfileAvatarUrl = (nextUrl) => {
+    const next = String(nextUrl || "");
+    setAvatarUrl(next);
+    if (next) {
+      localStorage.setItem(AVATAR_STORAGE_KEY, next);
+    } else {
+      localStorage.removeItem(AVATAR_STORAGE_KEY);
+    }
+  };
+
   const activeOrganization = useMemo(() => {
     if (!organizations.length) return null;
     const found = organizations.find((org) => org.id === activeOrgId);
@@ -81,6 +95,7 @@ export const AuthProvider = ({ children }) => {
         setAppUser(null);
         setToken(null);
         setMemberships([]);
+        setProfileAvatarUrl("");
         localStorage.removeItem("ttm_token");
         setLoading(false);
         setBootstrapped(true);
@@ -149,6 +164,8 @@ export const AuthProvider = ({ children }) => {
     activeOrganization,
     activeOrgId,
     setActiveOrganization,
+    avatarUrl,
+    setAvatarUrl: setProfileAvatarUrl,
     refreshOrganizations,
     bootstrapped,
     logout,

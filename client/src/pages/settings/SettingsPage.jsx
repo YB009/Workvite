@@ -19,7 +19,7 @@ const normalizeProjectStatus = (status = "") => {
 };
 
 export default function SettingsPage({ profileUserId, readOnly = false, inviteProfile = null }) {
-  const { firebaseUser, user, logout, activeOrganization } = useAuthContext();
+  const { firebaseUser, user, logout, activeOrganization, setAvatarUrl } = useAuthContext();
   const { closeProfile } = useProfile();
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -80,6 +80,9 @@ export default function SettingsPage({ profileUserId, readOnly = false, invitePr
             bio: "",
             avatarUrl: ""
           });
+          if (isSelf && typeof setAvatarUrl === "function") {
+            setAvatarUrl("");
+          }
           return;
         }
 
@@ -100,6 +103,9 @@ export default function SettingsPage({ profileUserId, readOnly = false, invitePr
             bio: profileData.profile?.bio || "",
             avatarUrl: profileData.profile?.avatarUrl || ""
           });
+          if (isSelf && typeof setAvatarUrl === "function") {
+            setAvatarUrl(profileData.profile?.avatarUrl || "");
+          }
           return;
         }
 
@@ -113,6 +119,9 @@ export default function SettingsPage({ profileUserId, readOnly = false, invitePr
           bio: profileData.profile?.bio || "",
           avatarUrl: profileData.profile?.avatarUrl || ""
         });
+        if (isSelf && typeof setAvatarUrl === "function") {
+          setAvatarUrl(profileData.profile?.avatarUrl || "");
+        }
 
         if (!org) {
           setProjects([]);
@@ -174,6 +183,9 @@ export default function SettingsPage({ profileUserId, readOnly = false, invitePr
     const reader = new FileReader();
     reader.onload = () => {
       setForm((prev) => ({ ...prev, avatarUrl: reader.result }));
+      if (isSelf && typeof setAvatarUrl === "function") {
+        setAvatarUrl(reader.result);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -189,6 +201,9 @@ export default function SettingsPage({ profileUserId, readOnly = false, invitePr
         bio: form.bio,
         avatarUrl: form.avatarUrl
       }, { headers });
+      if (isSelf && typeof setAvatarUrl === "function") {
+        setAvatarUrl(form.avatarUrl);
+      }
       setEditing(false);
     } catch (err) {
       console.error(err);
@@ -198,7 +213,7 @@ export default function SettingsPage({ profileUserId, readOnly = false, invitePr
     }
   };
 
-  const avatarFallback = firebaseUser?.photoURL || "https://i.pravatar.cc/100?img=5";
+  const avatarFallback = firebaseUser?.photoURL || "";
   const avatarSrc = form.avatarUrl || avatarFallback;
   const showDrawerBack = typeof closeProfile === "function" && (profileUserId || readOnly || !isSelf);
   const handleBack = () => {
@@ -239,7 +254,13 @@ export default function SettingsPage({ profileUserId, readOnly = false, invitePr
 
       <section className={`settings-card profile-overview ${editing ? "is-editing" : ""}`}>
         <div className="profile-avatar">
-          <img src={avatarSrc} alt="profile" />
+          {avatarSrc ? (
+            <img src={avatarSrc} alt="profile" />
+          ) : (
+            <div className="profile-avatar-fallback" aria-hidden="true">
+              <span className="profile-avatar-initials">{(form.name || "User").slice(0, 1).toUpperCase()}</span>
+            </div>
+          )}
           {isSelf && editing && (
             <label className="upload-chip">
               <input type="file" accept="image/*" onChange={(e) => handleAvatarUpload(e.target.files?.[0])} />

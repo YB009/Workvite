@@ -7,7 +7,7 @@ import workviteIcon from "../assets/workvite-icon.svg";
 import workviteLogo from "../assets/workvite-logo.svg";
 
 export default function Header() {
-  const { logout, firebaseUser, user, organizations, activeOrganization, setActiveOrganization } = useAuthContext();
+  const { logout, firebaseUser, user, organizations, activeOrganization, setActiveOrganization, avatarUrl } = useAuthContext();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,7 +23,7 @@ export default function Header() {
     firebaseUser?.email ||
     "User";
 
-  const avatarSrc = firebaseUser?.photoURL || "https://i.pravatar.cc/100?img=32";
+  const avatarSrc = avatarUrl || firebaseUser?.photoURL || "";
 
   useEffect(() => {
     const handler = (e) => {
@@ -103,7 +103,13 @@ export default function Header() {
           ref={menuRef}
           onClick={() => setMenuOpen((p) => !p)}
         >
-          <img src={avatarSrc} alt="avatar" />
+          {avatarSrc ? (
+            <img src={avatarSrc} alt="avatar" />
+          ) : (
+            <div className="profile-avatar-fallback" aria-hidden="true">
+              <User size={18} />
+            </div>
+          )}
           <div className="profile-text">
             <span className="profile-name">{displayName}</span>
             {user?.email && <span className="profile-email">{user.email}</span>}
