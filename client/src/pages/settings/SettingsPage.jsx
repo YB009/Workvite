@@ -257,8 +257,8 @@ export default function SettingsPage({ profileUserId, readOnly = false, invitePr
           {avatarSrc ? (
             <img src={avatarSrc} alt="profile" />
           ) : (
-            <div className="profile-avatar-fallback" aria-hidden="true">
-              <span className="profile-avatar-initials">{(form.name || "User").slice(0, 1).toUpperCase()}</span>
+            <div className="settings-avatar-fallback" aria-hidden="true">
+              <span className="settings-avatar-initials">{(form.name || "User").slice(0, 1).toUpperCase()}</span>
             </div>
           )}
           {isSelf && editing && (
