@@ -9,17 +9,19 @@ import {
   twitterProvider,
 } from "../../api/firebase";
 import { signInWithRedirect, createUserWithEmailAndPassword, signInWithPopup, getRedirectResult } from "firebase/auth";
+import {
+  isInAppBrowser,
+  shouldAutoRedirectInApp,
+  markInAppRedirectAttempted,
+  openInExternalBrowser,
+} from "../../utils/inAppBrowser.js";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { firebaseUser, loading } = useAuthContext();
   const redirectFlag = "ttm_oauth_redirect";
   const successFlag = "ttm_oauth_success";
-  const isInAppBrowser = (() => {
-    if (typeof navigator === "undefined") return false;
-    const ua = navigator.userAgent || "";
-    return /Snapchat|FBAN|FBAV|Instagram|Line|Twitter|LinkedIn|Pinterest|Telegram|WhatsApp|Messenger/i.test(ua);
-  })();
+  const inAppBrowser = isInAppBrowser();
   const [form, setForm] = useState({ email: "", password: "", confirm: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -44,6 +46,13 @@ export default function RegisterPage() {
       sessionStorage.removeItem(redirectFlag);
     });
   }, []);
+
+  useEffect(() => {
+    if (!inAppBrowser) return;
+    if (!shouldAutoRedirectInApp()) return;
+    markInAppRedirectAttempted();
+    openInExternalBrowser(window.location.href);
+  }, [inAppBrowser]);
 
   useEffect(() => {
     if (loading) return;
@@ -140,9 +149,9 @@ export default function RegisterPage() {
     <AuthLayout title="Create your account">
       <form className="auth-actions" onSubmit={handleSubmit}>
         {error && <div className="error-text">{error}</div>}
-        {isInAppBrowser && (
+        {inAppBrowser && (
           <div className="error-text">
-            Social sign-in is blocked inside in-app browsers (Snapchat, Instagram, etc.). Please open this site in Safari/Chrome to continue.
+            Opening this page in your browser so sign-up will work.
           </div>
         )}
         <div className="input-field">
@@ -174,13 +183,12 @@ export default function RegisterPage() {
             <span>Continue with Twitter</span>
           </button>
         </div>
-        {isInAppBrowser && (
+        {inAppBrowser && (
           <button
             type="button"
             className="btn-ghost"
             onClick={() => {
-              const url = window.location.href;
-              window.open(url, "_blank", "noopener,noreferrer");
+              openInExternalBrowser(window.location.href);
             }}
           >
             Open in browser

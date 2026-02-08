@@ -9,6 +9,12 @@ import {
   twitterProvider,
 } from "../../api/firebase";
 import { useAuthContext } from "../../context/AuthContext.jsx";
+import {
+  isInAppBrowser,
+  shouldAutoRedirectInApp,
+  markInAppRedirectAttempted,
+  openInExternalBrowser,
+} from "../../utils/inAppBrowser.js";
 
 const socialIcons = {
   google: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg",
@@ -30,9 +36,7 @@ export default function LoginPage() {
     const ua = navigator.userAgent || "";
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
   })();
-  const isInAppBrowser = /FBAN|FBAV|Instagram|Snapchat/i.test(
-    navigator.userAgent || ""
-  );
+  const inAppBrowser = isInAppBrowser();
   const prefersPopup = (() => {
     if (typeof navigator === "undefined") return false;
     const ua = navigator.userAgent || "";
@@ -49,6 +53,13 @@ export default function LoginPage() {
       sessionStorage.removeItem(redirectFlag);
     });
   }, []);
+
+  useEffect(() => {
+    if (!inAppBrowser) return;
+    if (!shouldAutoRedirectInApp()) return;
+    markInAppRedirectAttempted();
+    openInExternalBrowser(window.location.href);
+  }, [inAppBrowser]);
 
   useEffect(() => {
     if (loading) return;
@@ -131,9 +142,9 @@ export default function LoginPage() {
     <AuthLayout title="Welcome to Workvite">
       <form className="auth-actions" onSubmit={handleEmailLogin}>
         {error && <div className="error-text">{error}</div>}
-        {isInAppBrowser && (
+        {inAppBrowser && (
           <div className="error-text">
-            Social sign-in is blocked inside in-app browsers (Snapchat, Instagram, etc.). Please open this site in Safari/Chrome to continue.
+            Opening this page in your browser so sign-in will work.
           </div>
         )}
         <div className="input-field">
@@ -179,13 +190,12 @@ export default function LoginPage() {
             <span>Continue with Twitter</span>
           </button>
         </div>
-        {isInAppBrowser && (
+        {inAppBrowser && (
           <button
             type="button"
             className="btn-ghost"
             onClick={() => {
-              const url = window.location.href;
-              window.open(url, "_blank", "noopener,noreferrer");
+              openInExternalBrowser(window.location.href);
             }}
           >
             Open in browser

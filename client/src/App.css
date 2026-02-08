@@ -1031,6 +1031,9 @@ body.oauth-success {
   .hero-title {
     font-size: 42px;
   }
+  .eye-wrap {
+    display: none;
+  }
 }
 
 .antigravity-canvas {
