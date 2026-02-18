@@ -53,7 +53,7 @@ function LandingPage() {
         gap={24}
         startRotation={-80}
         endRotation={270}
-        scrollDistance="400vh"
+        scrollDistance="150vh"
         scrollSmoothing={1}
       />
       <ProblemSection />
