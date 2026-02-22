@@ -13,10 +13,30 @@ dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const { Pool } = pkg;
 const { PrismaClient } = pkgClient;
-const connectionString = process.env.DATABASE_URL;
+const rawConnectionString = process.env.DATABASE_URL;
 const allowInvalidCerts =
-  /sslaccept=accept_invalid_certs/i.test(connectionString || "") ||
+  /sslaccept=accept_invalid_certs/i.test(rawConnectionString || "") ||
   process.env.PG_SSL_REJECT_UNAUTHORIZED === "false";
+
+let connectionString = rawConnectionString;
+if (allowInvalidCerts && rawConnectionString) {
+  try {
+    const url = new URL(rawConnectionString);
+    // node-postgres can let URL SSL params override the explicit `ssl` config object.
+    // Strip SSL query params and set SSL behavior explicitly below.
+    [
+      "sslmode",
+      "sslaccept",
+      "sslcert",
+      "sslkey",
+      "sslrootcert",
+      "sslcrl",
+    ].forEach((key) => url.searchParams.delete(key));
+    connectionString = url.toString();
+  } catch {
+    connectionString = rawConnectionString;
+  }
+}
 
 const pool = new Pool({
   connectionString,
