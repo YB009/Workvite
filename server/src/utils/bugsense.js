@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { BugSense, registerNodeHandlers } from "@bugsense/bugsense-js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,21 +13,55 @@ const apiKey = process.env.BUGSENSE_API_KEY;
 
 const isConfigured = Boolean(endpoint && projectId && apiKey);
 
+class ServerBugSense {
+  constructor(options) {
+    this.options = options;
+  }
+
+  async captureException(error, context = {}) {
+    if (typeof fetch !== "function") return { delivered: false };
+
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    const payload = {
+      projectId: this.options.projectId,
+      environment: this.options.environment,
+      release: this.options.release,
+      message: normalizedError.message,
+      exceptionType: normalizedError.name,
+      stackTrace: normalizedError.stack || "",
+      tags: context.tags || {},
+      metadata: context.metadata || {},
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch(this.options.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-bugsense-api-key": this.options.apiKey,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      return { delivered: response.ok };
+    } catch {
+      return { delivered: false };
+    }
+  }
+}
+
 export const bugsense = isConfigured
-  ? new BugSense({
+  ? new ServerBugSense({
       endpoint,
       projectId,
       apiKey,
       environment: process.env.NODE_ENV || "development",
       release: process.env.BUGSENSE_RELEASE || "workvite-server@dev",
-      maxBatchSize: Number(process.env.BUGSENSE_MAX_BATCH_SIZE || 10),
-      flushIntervalMs: Number(process.env.BUGSENSE_FLUSH_INTERVAL_MS || 5000),
     })
   : null;
 
-if (bugsense) {
-  registerNodeHandlers(bugsense);
-} else if (process.env.NODE_ENV !== "production") {
+if (!bugsense && process.env.NODE_ENV !== "production") {
   console.warn(
     "[BugSense] Missing BUGSENSE_ENDPOINT, BUGSENSE_PROJECT_ID, or BUGSENSE_API_KEY. Server SDK not started."
   );
