@@ -18,20 +18,50 @@ class ServerBugSense {
     this.options = options;
   }
 
+  captureMessage(message, context = {}) {
+    return this.send({
+      message,
+      exceptionType: "Message",
+      stackTrace: "",
+      handled: true,
+      context,
+    });
+  }
+
   async captureException(error, context = {}) {
     if (typeof fetch !== "function") return { delivered: false };
 
     const normalizedError = error instanceof Error ? error : new Error(String(error));
-    const payload = {
-      projectId: this.options.projectId,
-      environment: this.options.environment,
-      release: this.options.release,
+    return this.send({
       message: normalizedError.message,
       exceptionType: normalizedError.name,
       stackTrace: normalizedError.stack || "",
+      handled: false,
+      context,
+    });
+  }
+
+  flush() {
+    return Promise.resolve({ delivered: true, sent: 0, failed: 0 });
+  }
+
+  async send({ message, exceptionType, stackTrace, handled, context }) {
+    if (typeof fetch !== "function") return { delivered: false };
+
+    const payload = {
+      projectId: this.options.projectId,
+      message,
+      level: "error",
+      platform: "server",
+      environment: this.options.environment,
+      releaseVersion: this.options.release,
+      exceptionType,
+      stackTrace,
+      handled,
       tags: context.tags || {},
+      contexts: context.contexts || {},
       metadata: context.metadata || {},
-      timestamp: new Date().toISOString(),
+      occurredAt: new Date().toISOString(),
     };
 
     try {
