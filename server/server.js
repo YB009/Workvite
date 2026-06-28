@@ -14,6 +14,7 @@ import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import prisma from "./prisma/client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,8 +81,14 @@ app.use("/api/activity", activityRoutes);
 app.use("/api/team", teamRoutes);
 
 // Health check endpoint
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", message: "Server is running" });
+app.get("/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", database: "ok", message: "Server is running" });
+  } catch (error) {
+    console.error("[health] database ping failed:", error?.message || error);
+    res.status(500).json({ status: "error", database: "unavailable" });
+  }
 });
 
 app.listen(port, () => {

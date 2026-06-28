@@ -16,7 +16,7 @@ if (!admin.apps.length) {
       }
     }
 
-    // Option 2: Fallback to individual variables (Recommended for Render)
+    // Option 2: Fallback to individual environment variables.
     if (!serviceAccount && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
       serviceAccount = {
         project_id: process.env.FIREBASE_PROJECT_ID,

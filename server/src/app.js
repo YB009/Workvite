@@ -18,13 +18,14 @@ import billingRoutes from "./routes/billingRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import { bugsense } from "./utils/bugsense.js";
+import prisma from "../prisma/client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Trust the proxy (Render load balancer) to ensure secure cookies/sessions work
+// Trust the deployment proxy so secure cookies/sessions work.
 app.set("trust proxy", 1);
 
 // Debug: Check if Service Account is loaded (do not log the actual key)
@@ -44,7 +45,6 @@ const defaultAllowedOrigins = [
   "http://localhost:5173",
   "http://localhost:4173",
   "https://workvite.vercel.app",
-  "https://team-task-manager-p15t.onrender.com",
 ];
 
 const corsOptions = {
@@ -90,7 +90,7 @@ app.use(
     proxy: true, // Ensure proxy is trusted for secure cookies
     cookie: {
       secure: process.env.NODE_ENV === "production", // Secure in production
-      sameSite: "lax", // 'none' required for cross-site (Render)
+      sameSite: "lax",
       httpOnly: true,
       path: "/",
     },
@@ -108,8 +108,13 @@ app.use("/api/billing", billingRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/users", userRoutes);
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+app.get("/health", async (req, res, next) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", database: "ok" });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use((err, req, res, next) => {

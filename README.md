@@ -17,7 +17,7 @@
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/postgres-14-blue" alt="Postgres" /></a>
 </p>
 
-🌐 Live Application: https://team-task-manager-p15t.onrender.com
+Live Application: https://workvite.vercel.app
 
 ## Tech stack
 - Frontend: React, Vite, Tailwind CSS, ThreeJS
@@ -99,6 +99,11 @@ npm run dev   # starts Vite on 5173
 ## API protection
 - The backend uses middleware to verify Firebase ID tokens and load the user from Prisma. Apply it to any protected routes (projects, tasks, billing, etc.).
 - Client-side route guards (`PrivateRoute`) improve UX but do not secure the API—keep the middleware enabled on the server.
+
+## Supabase keepalive
+- The public `GET /health` endpoint runs `SELECT 1` through Prisma, so a cron job can use it to keep the Supabase Postgres project active.
+- Cron target: `https://<your-api-vercel-domain>/health`
+- Suggested schedule: every 10-15 minutes.
 
 ## Common scripts
 - Backend: `npm run dev` (nodemon), `npm run start` (node)
